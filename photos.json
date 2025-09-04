@@ -1,0 +1,52 @@
+[
+  {
+    "day": "1",
+    "activity": "Yoga",
+    "persons": [
+      "Ana",
+      "Luis"
+    ],
+    "gps": [
+      39.9,
+      4.1
+    ],
+    "url": "images/dia1_yoga.jpg"
+  },
+  {
+    "day": "1",
+    "activity": "Danza",
+    "persons": [
+      "Carlos"
+    ],
+    "gps": [
+      39.91,
+      4.11
+    ],
+    "url": "images/dia1_danza.jpg"
+  },
+  {
+    "day": "2",
+    "activity": "Meditación",
+    "persons": [
+      "Marta"
+    ],
+    "gps": [
+      39.92,
+      4.12
+    ],
+    "url": "images/dia2_meditacion.jpg"
+  },
+  {
+    "day": "3",
+    "activity": "Senderismo",
+    "persons": [
+      "Luis",
+      "Marta"
+    ],
+    "gps": [
+      39.93,
+      4.13
+    ],
+    "url": "images/dia3_senderismo.jpg"
+  }
+]
