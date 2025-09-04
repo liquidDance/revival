@@ -1,0 +1,26 @@
+[
+  {
+    "filename": "0101_01_IMG_9308.jpg",
+    "lat": 38.9932,
+    "lng": 1.5633,
+    "activity": "Opening Circle",
+    "place": "Bosque Cala Pada",
+    "people": [
+      "Francesco",
+      "Karenina"
+    ],
+    "url": "images/0101_01_IMG_9308.jpg"
+  },
+  {
+    "filename": "0101_02_IMG_9295.jpg",
+    "lat": 38.9932,
+    "lng": 1.5633,
+    "activity": "Opening Circle",
+    "place": "Bosque Cala Pada",
+    "people": [
+      "Claudia",
+      "Jessi"
+    ],
+    "url": "images/0101_02_IMG_9295.jpg"
+  }
+]

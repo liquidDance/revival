@@ -1,0 +1,16 @@
+[
+  {
+    "url": "images/foto1.jpg",
+    "activity": "Actividad 1",
+    "place": "Lugar A",
+    "people": ["Ana", "Luis"],
+    "gps": [39.9, 4.1]
+  },
+  {
+    "url": "images/foto2.jpg",
+    "activity": "Actividad 2",
+    "place": "Lugar B",
+    "people": ["Pedro"],
+    "gps": [39.92, 4.12]
+  }
+]

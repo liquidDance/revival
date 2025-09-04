@@ -1,0 +1,26 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+header {
+  background: #222;
+  color: white;
+  padding: 10px;
+  text-align: center;
+}
+#search {
+  margin-top: 10px;
+  padding: 5px;
+  width: 60%;
+  max-width: 400px;
+}
+#map {
+  height: 90vh;
+  width: 100%;
+}
+.leaflet-popup-content img {
+  max-width: 200px;
+  display: block;
+  margin: 5px auto;
+  border-radius: 6px;
+}
