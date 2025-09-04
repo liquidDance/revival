@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Revival - Festival de Danza en el Agua</title>
+    <title>Liquid Dance Revival - Festival de Danza en el Agua</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     <style>
         :root {
             --color-primary: #2c3e50;
@@ -13,9 +15,6 @@
             --color-accent: #e74c3c;
             --color-light: #ecf0f1;
             --color-dark: #2c3e50;
-            --color-success: #2ecc71;
-            --color-warning: #f39c12;
-            --color-info: #9b59b6;
         }
 
         * {
@@ -42,17 +41,38 @@
             color: white;
             padding: 1rem;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .logo {
             font-size: 1.8rem;
             font-weight: bold;
-            margin-bottom: 0.5rem;
         }
 
         .logo span {
             color: var(--color-accent);
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .lang-btn.active {
+            background-color: white;
+            color: var(--color-primary);
         }
 
         .subtitle {
@@ -72,6 +92,8 @@
             padding: 1.5rem;
             overflow-y: auto;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
         }
 
         .filter-section {
@@ -84,18 +106,18 @@
             font-size: 1.1rem;
             border-bottom: 1px solid #eee;
             padding-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .search-box {
-            margin-bottom: 10px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: 'Montserrat', sans-serif;
+        .clear-btn {
+            background: none;
+            border: none;
+            color: var(--color-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-decoration: underline;
         }
 
         .filter-options {
@@ -119,9 +141,6 @@
         .filter-option label {
             cursor: pointer;
             font-size: 0.9rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .map-container {
@@ -144,6 +163,11 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
             z-index: 1000;
             max-width: 200px;
+        }
+
+        .legend h4 {
+            margin-bottom: 8px;
+            color: var(--color-primary);
         }
 
         .legend-item {
@@ -211,32 +235,6 @@
             color: var(--color-primary);
             text-align: center;
             padding-right: 40px;
-        }
-
-        .filters-modal {
-            margin-bottom: 15px;
-        }
-
-        .filter-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .filter-tag {
-            background-color: var(--color-secondary);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .filter-tag .remove {
-            cursor: pointer;
-            font-weight: bold;
         }
 
         .photos-container {
@@ -373,39 +371,59 @@
             .photos-grid {
                 grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             }
+            
+            header {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="logo">Re<span>vival</span></div>
-            <div class="subtitle">Festival de Danza en el Agua - Ibiza 2023</div>
+            <div>
+                <div class="logo">Liquid Dance <span>Revival</span></div>
+                <div class="subtitle" id="subtitle">Festival de Danza en el Agua - Ibiza 2023</div>
+            </div>
+            <div class="language-selector">
+                <button class="lang-btn active" id="lang-es">ES</button>
+                <button class="lang-btn" id="lang-en">EN</button>
+            </div>
         </header>
         
         <div class="main-content">
             <div class="filters-panel">
                 <div class="filter-section">
-                    <h3>Días del Evento</h3>
+                    <h3>
+                        <span id="days-title">Días del Festival</span>
+                        <button class="clear-btn" id="clear-days" style="display: none;">Deseleccionar</button>
+                    </h3>
                     <div class="filter-options" id="day-filters">
-                        <!-- Los filtros se generarán con JavaScript -->
+                        <!-- Días generados por JavaScript -->
                     </div>
                 </div>
                 
                 <div class="filter-section">
-                    <h3>Actividades</h3>
+                    <h3>
+                        <span id="activities-title">Actividades</span>
+                        <button class="clear-btn" id="clear-activities" style="display: none;">Deseleccionar</button>
+                    </h3>
                     <div class="filter-options" id="activity-filters">
-                        <!-- Los filtros se generarán con JavaScript -->
+                        <!-- Actividades generadas por JavaScript -->
                     </div>
                 </div>
                 
                 <div class="filter-section">
-                    <h3>Participantes</h3>
+                    <h3>
+                        <span id="participants-title">Participantes</span>
+                        <button class="clear-btn" id="clear-participants" style="display: none;">Deseleccionar</button>
+                    </h3>
                     <div class="search-box">
                         <input type="text" id="participant-search" placeholder="Buscar participante...">
                     </div>
                     <div class="filter-options" id="participant-filters">
-                        <!-- Los filtros se generarán con JavaScript -->
+                        <!-- Participantes generados por JavaScript -->
                     </div>
                 </div>
             </div>
@@ -414,9 +432,9 @@
                 <div id="map"></div>
                 
                 <div class="legend">
-                    <h4>Leyenda</h4>
+                    <h4 id="legend-title">Leyenda</h4>
                     <div id="legend-items">
-                        <!-- Los elementos de leyenda se generarán con JavaScript -->
+                        <!-- Elementos de leyenda generados por JavaScript -->
                     </div>
                 </div>
             </div>
@@ -429,15 +447,9 @@
             <span class="close-modal">&times;</span>
             <h2 class="location-title" id="modal-location-title"></h2>
             
-            <div class="filters-modal">
-                <div class="filter-tags" id="modal-filter-tags">
-                    <!-- Filtros activos se mostrarán aquí -->
-                </div>
-            </div>
-            
             <div class="photos-container">
                 <div class="photos-grid" id="photos-grid">
-                    <!-- Las miniaturas de fotos se insertarán aquí mediante JavaScript -->
+                    <!-- Miniaturas de fotos generadas por JavaScript -->
                 </div>
                 
                 <div class="photo-viewer" id="photo-viewer">
@@ -474,17 +486,225 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script>
+        // ================================
+        // CONFIGURACIÓN Y DATOS
+        // ================================
+        
+        // Textos en diferentes idiomas
+        const translations = {
+            es: {
+                subtitle: "Festival de Danza en el Agua - Ibiza 2023",
+                daysTitle: "Días del Festival",
+                activitiesTitle: "Actividades",
+                participantsTitle: "Participantes",
+                legendTitle: "Leyenda - Día ",
+                clearAll: "Deseleccionar",
+                searchPlaceholder: "Buscar participante...",
+                showInfo: "Mostrar info",
+                hideInfo: "Ocultar info",
+                previous: "← Anterior",
+                next: "Siguiente →",
+                date: "Fecha",
+                place: "Lugar",
+                activity: "Actividad",
+                people: "Personas",
+                noPhotos: "No hay fotos para esta actividad"
+            },
+            en: {
+                subtitle: "Water Dance Festival - Ibiza 2023",
+                daysTitle: "Festival Days",
+                activitiesTitle: "Activities",
+                participantsTitle: "Participants",
+                legendTitle: "Legend - Day ",
+                clearAll: "Deselect all",
+                searchPlaceholder: "Search participant...",
+                showInfo: "Show info",
+                hideInfo: "Hide info",
+                previous: "← Previous",
+                next: "Next →",
+                date: "Date",
+                place: "Place",
+                activity: "Activity",
+                people: "People",
+                noPhotos: "No photos for this activity"
+            }
+        };
+
         // Lista de participantes
         const allParticipants = [
             "Aitor", "Alex", "Anabel", "Andreas", "Andrew", "Annick", 
             "Anuja", "Blanca", "Claudia", "Diaana", "Dóri", "Francesco", 
             "Germán", "Jessi", "Karenina", "Laura", "Marga", "Martín", 
-            "Nadia", "Natalia", "pareja", "Riki", "Tanja", "Willem"
+            "Nadia", "Natalia", "Pareja", "Riki", "Tanja", "Willem", "Zara", "Nati"
         ];
 
-        // Variables globales
-        let allActivities = [];
+        // Datos de actividades (extraídos del CSV)
+        const allActivities = [
+            {
+                id: "0100",
+                date: "06/08/25",
+                day: 1,
+                activity: "Arrive to the accomondations",
+                activity_es: "Llegada al alojamiento",
+                place: "",
+                lat: null,
+                lng: null,
+                participants: []
+            },
+            {
+                id: "0101",
+                date: "06/08/25",
+                day: 1,
+                activity: "Opening Circle",
+                activity_es: "Círculo de apertura",
+                place: "Bosque Cala Pada",
+                lat: 38.99322,
+                lng: 1.56329,
+                participants: []
+            },
+            {
+                id: "0102",
+                date: "06/08/25",
+                day: 1,
+                activity: "Journey into the flow",
+                activity_es: "Viaje hacia la fluidez",
+                place: "Cala Pada",
+                lat: 38.99327,
+                lng: 1.56183,
+                participants: ["Martin", "Tanja"]
+            },
+            {
+                id: "0201",
+                date: "07/08/25",
+                day: 2,
+                activity: "Awaken Flow - Yoga & playful connection",
+                activity_es: "Despertar del flujo - Yoga y conexión lúdica",
+                place: "Playa S'Arenal Petit, Portinatx",
+                lat: 39.10877,
+                lng: 1.51521,
+                participants: ["Zara"]
+            },
+            {
+                id: "0202",
+                date: "07/08/25",
+                day: 2,
+                activity: "Water-Rebozo",
+                activity_es: "Rebozo de agua",
+                place: "",
+                lat: null,
+                lng: null,
+                participants: ["Anuja"]
+            },
+            {
+                id: "0206",
+                date: "07/08/25",
+                day: 2,
+                activity: "Introduction Soma-Water Dance in Pool",
+                activity_es: "Introducción a la danza Soma-Agua en la piscina",
+                place: "Willem",
+                lat: 39.00181,
+                lng: 1.54227,
+                participants: ["Martin"]
+            },
+            {
+                id: "0207",
+                date: "07/08/25",
+                day: 2,
+                activity: "Ecstatic Dance",
+                activity_es: "Danza extática",
+                place: "",
+                lat: null,
+                lng: null,
+                participants: ["Willem"]
+            },
+            {
+                id: "0301",
+                date: "08/08/25",
+                day: 3,
+                activity: "Morning Practice",
+                activity_es: "Práctica matutina",
+                place: "Cala Benirràs",
+                lat: 39.08958,
+                lng: 1.45463,
+                participants: ["Anuja"]
+            },
+            {
+                id: "0304",
+                date: "08/08/25",
+                day: 3,
+                activity: "Deep Dance Swarm among the sea weed",
+                activity_es: "Danza profunda Enjambre entre las algas",
+                place: "",
+                lat: null,
+                lng: null,
+                participants: ["Alex"]
+            },
+            {
+                id: "0401",
+                date: "09/08/25",
+                day: 4,
+                activity: "Morning Practice - Soma & Voice",
+                activity_es: "Práctica matutina - Soma y voz",
+                place: "ses Salines",
+                lat: 38.83970,
+                lng: 1.39704,
+                participants: ["Riki"]
+            },
+            {
+                id: "0402",
+                date: "09/08/25",
+                day: 4,
+                activity: "Partner-Water-Dance",
+                activity_es: "Danza en pareja en el agua",
+                place: "Cala Pluma",
+                lat: 38.83574,
+                lng: 1.40067,
+                participants: ["Alex"]
+            },
+            {
+                id: "0404",
+                date: "09/08/25",
+                day: 4,
+                activity: "Contact Improv and Water Rebozo",
+                activity_es: "Contact Improvisación y Rebozo de agua",
+                place: "",
+                lat: null,
+                lng: null,
+                participants: ["Anuja"]
+            },
+            {
+                id: "0405",
+                date: "09/08/25",
+                day: 4,
+                activity: "Water Blessing Ceremony & Sunset Jam",
+                activity_es: "Ceremonia de bendición del agua y jam al atardecer",
+                place: "",
+                lat: null,
+                lng: null,
+                participants: ["Nati"]
+            },
+            {
+                id: "0501",
+                date: "10/08/25",
+                day: 5,
+                activity: "Moving, Sharing, Caring, Dancing, Flowing & Closing",
+                activity_es: "Moviéndose, compartiendo, cuidando, bailando, fluyendo y cerrando",
+                place: "sa Caleta",
+                lat: 38.87005,
+                lng: 1.33973,
+                participants: []
+            }
+        ];
+
+        // Filtrar solo actividades con ubicación
+        const activitiesWithLocation = allActivities.filter(activity => activity.lat && activity.lng);
+
+        // ================================
+        // VARIABLES GLOBALES
+        // ================================
+        let currentLanguage = 'es';
         let currentLocationId = null;
         let currentPhotos = [];
         let currentPhotoIndex = 0;
@@ -493,8 +713,11 @@
             activities: [],
             participants: []
         };
+        let markersCluster = null;
 
-        // Inicialización del mapa
+        // ================================
+        // INICIALIZACIÓN DEL MAPA
+        // ================================
         const map = L.map('map').setView([38.98, 1.30], 10);
         
         // Añadir capa del mapa
@@ -502,173 +725,25 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
         
-        // Añadir imagen de satélite
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-        }).addTo(map);
-        
-        // Capa para los marcadores
-        const markersLayer = L.layerGroup().addTo(map);
-        
-        // Parsear datos CSV
-        function parseCSVData() {
-            // Datos extraídos del CSV proporcionado
-            const activities = [
-                {
-                    id: "0101",
-                    date: "06/08/25",
-                    day: 1,
-                    activity: "Opening Circle",
-                    activity_es: "Círculo de apertura",
-                    place: "Bosque Cala Pada",
-                    lat: 38.99322,
-                    lng: 1.56329,
-                    participants: []
-                },
-                {
-                    id: "0102",
-                    date: "06/08/25",
-                    day: 1,
-                    activity: "Journey into the flow",
-                    activity_es: "Viaje hacia la fluidez",
-                    place: "Cala Pada",
-                    lat: 38.99327,
-                    lng: 1.56183,
-                    participants: ["Martin", "Tanja"]
-                },
-                {
-                    id: "0201",
-                    date: "07/08/25",
-                    day: 2,
-                    activity: "Awaken Flow - Yoga & playful connection",
-                    activity_es: "Despertar del flujo - Yoga y conexión lúdica",
-                    place: "Playa S'Arenal Petit, Portinatx",
-                    lat: 39.10877,
-                    lng: 1.51521,
-                    participants: ["Zara"]
-                },
-                {
-                    id: "0202",
-                    date: "07/08/25",
-                    day: 2,
-                    activity: "Water-Rebozo",
-                    activity_es: "Rebozo de agua",
-                    place: "Por determinar",
-                    lat: 39.00181,
-                    lng: 1.54227,
-                    participants: ["Anuja"]
-                },
-                {
-                    id: "0206",
-                    date: "07/08/25",
-                    day: 2,
-                    activity: "Introduction Soma-Water Dance in Pool",
-                    activity_es: "Introducción a la danza Soma-Agua en la piscina",
-                    place: "Willem",
-                    lat: 39.00181,
-                    lng: 1.54227,
-                    participants: ["Martin"]
-                },
-                {
-                    id: "0207",
-                    date: "07/08/25",
-                    day: 2,
-                    activity: "Ecstatic Dance",
-                    activity_es: "Danza extática",
-                    place: "Por determinar",
-                    lat: 39.00181,
-                    lng: 1.54227,
-                    participants: ["Willem"]
-                },
-                {
-                    id: "0301",
-                    date: "08/08/25",
-                    day: 3,
-                    activity: "Morning Practice",
-                    activity_es: "Práctica matutina",
-                    place: "Cala Benirràs",
-                    lat: 39.08958,
-                    lng: 1.45463,
-                    participants: ["Anuja"]
-                },
-                {
-                    id: "0304",
-                    date: "08/08/25",
-                    day: 3,
-                    activity: "Deep Dance Swarm among the sea weed",
-                    activity_es: "Danza profunda Enjambre entre las algas",
-                    place: "Por determinar",
-                    lat: 39.08958,
-                    lng: 1.45463,
-                    participants: ["Alex"]
-                },
-                {
-                    id: "0401",
-                    date: "09/08/25",
-                    day: 4,
-                    activity: "Morning Practice - Soma & Voice",
-                    activity_es: "Práctica matutina - Soma y voz",
-                    place: "ses Salines",
-                    lat: 38.83970,
-                    lng: 1.39704,
-                    participants: ["Rikki"]
-                },
-                {
-                    id: "0402",
-                    date: "09/08/25",
-                    day: 4,
-                    activity: "Partner-Water-Dance",
-                    activity_es: "Danza en pareja en el agua",
-                    place: "Cala Pluma",
-                    lat: 38.83574,
-                    lng: 1.40067,
-                    participants: ["Alex"]
-                },
-                {
-                    id: "0404",
-                    date: "09/08/25",
-                    day: 4,
-                    activity: "Contact Improv and Water Rebozo",
-                    activity_es: "Contact Improvisación y Rebozo de agua",
-                    place: "Por determinar",
-                    lat: 38.83574,
-                    lng: 1.40067,
-                    participants: ["Anuja"]
-                },
-                {
-                    id: "0405",
-                    date: "09/08/25",
-                    day: 4,
-                    activity: "Water Blessing Ceremony & Sunset Jam",
-                    activity_es: "Ceremonia de bendición del agua y jam al atardecer",
-                    place: "Por determinar",
-                    lat: 38.83574,
-                    lng: 1.40067,
-                    participants: ["Nati"]
-                },
-                {
-                    id: "0501",
-                    date: "10/08/25",
-                    day: 5,
-                    activity: "Moving, Sharing, Caring, Dancing, Flowing & Closing",
-                    activity_es: "Moviéndose, compartiendo, cuidando, bailando, fluyendo y cerrando",
-                    place: "sa Caleta",
-                    lat: 38.87005,
-                    lng: 1.33973,
-                    participants: []
-                }
-            ];
-            
-            return activities;
-        }
+        // Capa para los marcadores (usando clustering)
+        markersCluster = L.markerClusterGroup({
+            maxClusterRadius: 40,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true
+        });
+        map.addLayer(markersCluster);
 
-        // Generar colores únicos para cada tipo de actividad
+        // ================================
+        // FUNCIONES PRINCIPALES
+        // ================================
+
+        // Generar colores únicos para actividades
         function generateActivityColors(activities) {
             const activityTypes = [...new Set(activities.map(a => a.activity))];
             const colors = [
                 '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
-                '#1abc9c', '#34495e', '#e67e22', '#27ae60', '#8e44ad',
-                '#d35400', '#16a085', '#c0392b', '#2980b9', '#f1c40f'
+                '#1abc9c', '#34495e', '#e67e22', '#27ae60', '#8e44ad'
             ];
             
             const colorMap = {};
@@ -679,52 +754,68 @@
             return colorMap;
         }
 
-        // Generar filtros
+        // Generar todos los filtros
         function generateFilters() {
             generateDayFilters();
             generateActivityFilters();
             generateParticipantFilters();
+            setupClearButtons();
+            setupLanguageToggle();
         }
 
         // Generar filtros por día
         function generateDayFilters() {
             const dayFilters = document.getElementById('day-filters');
-            const uniqueDays = [...new Set(allActivities.map(a => a.day))].sort();
+            const uniqueDays = [...new Set(activitiesWithLocation.map(a => a.day))].sort();
             
             dayFilters.innerHTML = '';
             uniqueDays.forEach(day => {
                 const div = document.createElement('div');
                 div.className = 'filter-option';
                 div.innerHTML = `
-                    <input type="checkbox" id="day-${day}" name="day" value="${day}" checked>
+                    <input type="checkbox" id="day-${day}" name="day" value="${day}">
                     <label for="day-${day}">Día ${day}</label>
                 `;
                 dayFilters.appendChild(div);
             });
             
-            // Añadir event listeners
             document.querySelectorAll('input[name="day"]').forEach(input => {
-                input.addEventListener('change', updateActiveFilters);
+                input.addEventListener('change', function() {
+                    updateActiveFilters();
+                    // Cuando se selecciona un día, actualizar actividades disponibles
+                    updateActivityFilters();
+                });
             });
         }
 
-        // Generar filtros por actividad
-        function generateActivityFilters() {
+        // Actualizar filtros de actividades según día seleccionado
+        function updateActivityFilters() {
+            const selectedDays = Array.from(document.querySelectorAll('input[name="day"]:checked')).map(input => parseInt(input.value));
             const activityFilters = document.getElementById('activity-filters');
-            const uniqueActivities = [...new Set(allActivities.map(a => a.activity))].sort();
+            
+            // Obtener actividades únicas para los días seleccionados
+            let activitiesToShow = [];
+            if (selectedDays.length > 0) {
+                activitiesToShow = [...new Set(activitiesWithLocation
+                    .filter(a => selectedDays.includes(a.day))
+                    .map(a => a.activity))].sort();
+            } else {
+                activitiesToShow = [...new Set(activitiesWithLocation.map(a => a.activity))].sort();
+            }
             
             activityFilters.innerHTML = '';
-            uniqueActivities.forEach(activity => {
+            activitiesToShow.forEach(activity => {
                 const div = document.createElement('div');
                 div.className = 'filter-option';
                 div.innerHTML = `
-                    <input type="checkbox" id="${slugify(activity)}" name="activity" value="${activity}" checked>
-                    <label for="${slugify(activity)}">${activity}</label>
+                    <input type="checkbox" id="${slugify(activity)}" name="activity" value="${activity}">
+                    <label for="${slugify(activity)}">${currentLanguage === 'es' ? 
+                        activitiesWithLocation.find(a => a.activity === activity)?.activity_es || activity : 
+                        activity}</label>
                 `;
                 activityFilters.appendChild(div);
             });
             
-            // Añadir event listeners
             document.querySelectorAll('input[name="activity"]').forEach(input => {
                 input.addEventListener('change', updateActiveFilters);
             });
@@ -735,13 +826,11 @@
             const participantFilters = document.getElementById('participant-filters');
             const searchInput = document.getElementById('participant-search');
             
-            // Función de búsqueda
             searchInput.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase();
                 renderParticipantFilters(searchTerm);
             });
             
-            // Renderizar inicialmente
             renderParticipantFilters();
         }
 
@@ -764,10 +853,80 @@
                 participantFilters.appendChild(div);
             });
             
-            // Añadir event listeners
             document.querySelectorAll('input[name="participant"]').forEach(input => {
                 input.addEventListener('change', updateActiveFilters);
             });
+        }
+
+        // Configurar botones de deseleccionar
+        function setupClearButtons() {
+            document.getElementById('clear-days').addEventListener('click', () => {
+                document.querySelectorAll('input[name="day"]:checked').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                updateActiveFilters();
+                updateActivityFilters();
+            });
+            
+            document.getElementById('clear-activities').addEventListener('click', () => {
+                document.querySelectorAll('input[name="activity"]:checked').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                updateActiveFilters();
+            });
+            
+            document.getElementById('clear-participants').addEventListener('click', () => {
+                document.querySelectorAll('input[name="participant"]:checked').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                updateActiveFilters();
+            });
+        }
+
+        // Configurar toggle de idioma
+        function setupLanguageToggle() {
+            document.getElementById('lang-es').addEventListener('click', () => {
+                if (currentLanguage !== 'es') {
+                    currentLanguage = 'es';
+                    document.getElementById('lang-es').classList.add('active');
+                    document.getElementById('lang-en').classList.remove('active');
+                    updateLanguage();
+                }
+            });
+            
+            document.getElementById('lang-en').addEventListener('click', () => {
+                if (currentLanguage !== 'en') {
+                    currentLanguage = 'en';
+                    document.getElementById('lang-en').classList.add('active');
+                    document.getElementById('lang-es').classList.remove('active');
+                    updateLanguage();
+                }
+            });
+        }
+
+        // Actualizar idioma de la interfaz
+        function updateLanguage() {
+            document.getElementById('subtitle').textContent = translations[currentLanguage].subtitle;
+            document.getElementById('days-title').textContent = translations[currentLanguage].daysTitle;
+            document.getElementById('activities-title').textContent = translations[currentLanguage].activitiesTitle;
+            document.getElementById('participants-title').textContent = translations[currentLanguage].participantsTitle;
+            document.getElementById('participant-search').placeholder = translations[currentLanguage].searchPlaceholder;
+            document.getElementById('toggle-metadata').textContent = translations[currentLanguage].showInfo;
+            document.getElementById('prev-photo').textContent = translations[currentLanguage].previous;
+            document.getElementById('next-photo').textContent = translations[currentLanguage].next;
+            
+            // Actualizar etiquetas de metadata
+            document.querySelectorAll('.metadata-label').forEach((el, index) => {
+                const labels = [translations[currentLanguage].date, translations[currentLanguage].place, 
+                               translations[currentLanguage].activity, translations[currentLanguage].people];
+                if (labels[index]) el.textContent = labels[index] + ':';
+            });
+            
+            // Actualizar actividades en los filtros
+            updateActivityFilters();
+            
+            // Actualizar leyenda
+            updateLegend();
         }
 
         // Actualizar filtros activos
@@ -778,102 +937,94 @@
                 participants: Array.from(document.querySelectorAll('input[name="participant"]:checked')).map(input => input.value)
             };
             
+            // Mostrar/ocultar botones de deseleccionar
+            document.getElementById('clear-days').style.display = activeFilters.days.length > 0 ? 'block' : 'none';
+            document.getElementById('clear-activities').style.display = activeFilters.activities.length > 0 ? 'block' : 'none';
+            document.getElementById('clear-participants').style.display = activeFilters.participants.length > 0 ? 'block' : 'none';
+            
             createMarkers();
-            updateModalFilters();
+            updateLegend();
         }
 
-        // Actualizar filtros en el modal
-        function updateModalFilters() {
-            const filterTags = document.getElementById('modal-filter-tags');
-            filterTags.innerHTML = '';
+        // Actualizar leyenda
+        function updateLegend() {
+            const legendItems = document.getElementById('legend-items');
+            legendItems.innerHTML = '';
             
-            // Añadir etiquetas para filtros activos
-            activeFilters.days.forEach(day => {
-                const tag = document.createElement('div');
-                tag.className = 'filter-tag';
-                tag.innerHTML = `Día ${day} <span class="remove" onclick="removeFilter('day', ${day})">×</span>`;
-                filterTags.appendChild(tag);
-            });
-            
-            activeFilters.activities.forEach(activity => {
-                const tag = document.createElement('div');
-                tag.className = 'filter-tag';
-                tag.innerHTML = `${activity} <span class="remove" onclick="removeFilter('activity', '${activity}')">×</span>`;
-                filterTags.appendChild(tag);
-            });
-            
-            activeFilters.participants.forEach(participant => {
-                const tag = document.createElement('div');
-                tag.className = 'filter-tag';
-                tag.innerHTML = `${participant} <span class="remove" onclick="removeFilter('participant', '${participant}')">×</span>`;
-                filterTags.appendChild(tag);
-            });
-        }
-
-        // Remover filtro
-        function removeFilter(type, value) {
-            const selector = type === 'day' ? 
-                `input[name="${type}"][value="${value}"]` :
-                `input[name="${type}"][value="${value}"]`;
-            
-            const input = document.querySelector(selector);
-            if (input) {
-                input.checked = false;
-                updateActiveFilters();
+            // Mostrar leyenda solo si hay un día seleccionado
+            if (activeFilters.days.length === 1) {
+                const day = activeFilters.days[0];
+                document.getElementById('legend-title').textContent = translations[currentLanguage].legendTitle + day;
+                
+                const dayActivities = activitiesWithLocation.filter(a => a.day === day);
+                const activityColors = generateActivityColors(dayActivities);
+                
+                Object.entries(activityColors).forEach(([activity, color]) => {
+                    const div = document.createElement('div');
+                    div.className = 'legend-item';
+                    div.innerHTML = `
+                        <div class="legend-color" style="background-color: ${color};"></div>
+                        <span>${currentLanguage === 'es' ? 
+                            dayActivities.find(a => a.activity === activity)?.activity_es || activity : 
+                            activity}</span>
+                    `;
+                    legendItems.appendChild(div);
+                });
+            } else {
+                document.getElementById('legend-title').textContent = translations[currentLanguage].legendTitle;
             }
         }
 
-        // Crear marcadores para cada ubicación
+        // Crear marcadores en el mapa
         function createMarkers() {
-            markersLayer.clearLayers();
-            const activityColors = generateActivityColors(allActivities);
+            markersCluster.clearLayers();
+            const activityColors = generateActivityColors(activitiesWithLocation);
             
-            allActivities.forEach(activity => {
+            activitiesWithLocation.forEach(activity => {
                 // Filtrar por días, actividades y participantes seleccionados
                 const dayMatch = activeFilters.days.length === 0 || activeFilters.days.includes(activity.day);
                 const activityMatch = activeFilters.activities.length === 0 || activeFilters.activities.includes(activity.activity);
                 
                 let participantMatch = activeFilters.participants.length === 0;
-                if (!participantMatch) {
+                if (!participantMatch && activity.participants.length > 0) {
                     participantMatch = activeFilters.participants.some(participant => 
                         activity.participants.includes(participant)
                     );
                 }
                 
                 if (dayMatch && activityMatch && participantMatch) {
-                    // Crear marcadores personalizados
+                    // Crear marcador
                     const marker = L.marker([activity.lat, activity.lng], {
                         icon: L.divIcon({
                             className: 'custom-marker',
-                            html: `<div style="background-color: ${activityColors[activity.activity]}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
-                            iconSize: [24, 24],
-                            iconAnchor: [12, 12]
+                            html: `<div style="background-color: ${activityColors[activity.activity]}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
                         })
                     });
                     
-                    // Añadir popup con información básica
+                    // Añadir popup con información
+                    const activityName = currentLanguage === 'es' ? activity.activity_es : activity.activity;
                     marker.bindPopup(`
                         <strong>${activity.place}</strong><br>
-                        <em>${activity.activity}</em><br>
-                        Día: ${activity.day}<br>
-                        ${activity.participants.length > 0 ? 'Participantes: ' + activity.participants.join(', ') + '<br>' : ''}
+                        <em>${activityName}</em><br>
+                        ${translations[currentLanguage].daysTitle.slice(0, -1)}: ${activity.day}<br>
+                        ${activity.participants.length > 0 ? translations[currentLanguage].people + ': ' + activity.participants.join(', ') + '<br>' : ''}
                         <button onclick="showLocationPhotos('${activity.id}')">Ver fotos</button>
                     `);
                     
-                    marker.addTo(markersLayer);
+                    markersCluster.addLayer(marker);
                 }
             });
         }
 
-        // Simular datos de fotos (debes reemplazar esto con tus datos reales)
+        // Simular datos de fotos (debes reemplazar con tus datos reales)
         function getPhotosForActivity(activityId) {
-            // Esta función simula la carga de fotos
-            // En la implementación real, deberías tener un mapeo entre actividades y fotos
             const activity = allActivities.find(a => a.id === activityId);
             if (!activity) return [];
             
-            // Simular 3-8 fotos por actividad
-            const photoCount = Math.floor(Math.random() * 6) + 3;
+            // Simular algunas fotos
+            const photoCount = Math.floor(Math.random() * 3) + 2;
             const photos = [];
             
             for (let i = 1; i <= photoCount; i++) {
@@ -881,33 +1032,26 @@
                     src: `fotos/dia${activity.day}/${slugify(activity.activity)}/foto${i}.jpg`,
                     date: activity.date,
                     place: activity.place,
-                    activity: activity.activity,
-                    people: activity.participants.concat([randomParticipant()]).filter((v, i, a) => a.indexOf(v) === i)
+                    activity: currentLanguage === 'es' ? activity.activity_es : activity.activity,
+                    people: activity.participants
                 });
             }
             
             return photos;
         }
 
-        // Helper para obtener un participante aleatorio
-        function randomParticipant() {
-            return allParticipants[Math.floor(Math.random() * allParticipants.length)];
-        }
-
-        // Mostrar fotos de una ubicación en el modal
+        // Mostrar fotos de una actividad
         function showLocationPhotos(activityId) {
             const activity = allActivities.find(a => a.id === activityId);
             if (!activity) return;
             
-            document.getElementById('modal-location-title').textContent = `${activity.place} - ${activity.activity}`;
+            const activityName = currentLanguage === 'es' ? activity.activity_es : activity.activity;
+            document.getElementById('modal-location-title').textContent = `${activity.place} - ${activityName}`;
             
-            // Obtener fotos para esta actividad
             currentPhotos = getPhotosForActivity(activityId);
             currentLocationId = activityId;
             
             renderPhotoGrid();
-            
-            // Mostrar modal
             document.getElementById('photo-modal').style.display = 'flex';
             document.getElementById('photo-viewer').style.display = 'none';
         }
@@ -918,86 +1062,79 @@
             photosGrid.innerHTML = '';
             
             if (currentPhotos.length === 0) {
-                photosGrid.innerHTML = '<p>No hay fotos para esta actividad</p>';
+                photosGrid.innerHTML = `<p>${translations[currentLanguage].noPhotos}</p>`;
                 return;
             }
             
-            // Crear miniaturas de fotos
             currentPhotos.forEach((photo, index) => {
                 const thumbContainer = document.createElement('div');
-                thumbContainer.className = 'photo-thumb-container';
-                
                 const thumb = document.createElement('img');
                 thumb.src = photo.src;
                 thumb.alt = `Foto ${index + 1}`;
                 thumb.className = 'photo-thumb';
                 thumb.onclick = () => showPhotoViewer(index);
-                
                 thumbContainer.appendChild(thumb);
                 photosGrid.appendChild(thumbContainer);
             });
         }
 
-        // Mostrar foto en tamaño grande
+        // Mostrar foto en visor
         function showPhotoViewer(photoIndex) {
             if (photoIndex < 0 || photoIndex >= currentPhotos.length) return;
             
             currentPhotoIndex = photoIndex;
             const photo = currentPhotos[photoIndex];
             
-            // Actualizar visor de foto
             document.getElementById('large-photo').src = photo.src;
             document.getElementById('photo-counter').textContent = `${photoIndex + 1} / ${currentPhotos.length}`;
-            
-            // Actualizar metadatos
             document.getElementById('metadata-date').textContent = photo.date;
             document.getElementById('metadata-place').textContent = photo.place;
             document.getElementById('metadata-activity').textContent = photo.activity;
             document.getElementById('metadata-people').textContent = photo.people.join(', ');
             
-            // Resaltar miniatura activa
             document.querySelectorAll('.photo-thumb').forEach((thumb, idx) => {
                 thumb.classList.toggle('active', idx === photoIndex);
             });
             
-            // Mostrar visor
             document.getElementById('photo-viewer').style.display = 'flex';
-            
-            // Desplazar a la miniatura activa
-            const activeThumb = document.querySelectorAll('.photo-thumb')[photoIndex];
-            if (activeThumb) {
-                activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
         }
 
-        // Navegar a foto anterior
+        // Helper para crear slugs
+        function slugify(text) {
+            return text.toString().toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '-')
+                .replace(/^-+/, '')
+                .replace(/-+$/, '');
+        }
+
+        // ================================
+        // CONFIGURACIÓN DE EVENTOS
+        // ================================
         document.getElementById('prev-photo').addEventListener('click', () => {
             let newIndex = currentPhotoIndex - 1;
             if (newIndex < 0) newIndex = currentPhotos.length - 1;
             showPhotoViewer(newIndex);
         });
 
-        // Navegar a foto siguiente
         document.getElementById('next-photo').addEventListener('click', () => {
             let newIndex = currentPhotoIndex + 1;
             if (newIndex >= currentPhotos.length) newIndex = 0;
             showPhotoViewer(newIndex);
         });
 
-        // Alternar metadatos
         document.getElementById('toggle-metadata').addEventListener('click', function() {
             const metadata = document.getElementById('photo-metadata');
             const isVisible = metadata.style.display !== 'none';
             metadata.style.display = isVisible ? 'none' : 'block';
-            this.textContent = isVisible ? 'Mostrar info' : 'Ocultar info';
+            this.textContent = isVisible ? translations[currentLanguage].showInfo : translations[currentLanguage].hideInfo;
         });
 
-        // Cerrar modal
         document.querySelector('.close-modal').addEventListener('click', () => {
             document.getElementById('photo-modal').style.display = 'none';
         });
 
-        // Cerrar modal al hacer clic fuera del contenido
         window.addEventListener('click', (event) => {
             const modal = document.getElementById('photo-modal');
             if (event.target === modal) {
@@ -1005,39 +1142,16 @@
             }
         });
 
-        // Helper para crear slugs
-        function slugify(text) {
-            return text.toString().toLowerCase()
-                .replace(/\s+/g, '-')           // Replace spaces with -
-                .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-                .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-                .replace(/^-+/, '')             // Trim - from start of text
-                .replace(/-+$/, '');            // Trim - from end of text
-        }
-
-        // Inicializar la aplicación
+        // ================================
+        // INICIALIZACIÓN
+        // ================================
         function initApp() {
-            allActivities = parseCSVData();
             generateFilters();
+            updateActivityFilters();
             createMarkers();
-            
-            // Inicializar leyenda
-            const activityColors = generateActivityColors(allActivities);
-            const legendItems = document.getElementById('legend-items');
-            legendItems.innerHTML = '';
-            
-            Object.entries(activityColors).forEach(([activity, color]) => {
-                const div = document.createElement('div');
-                div.className = 'legend-item';
-                div.innerHTML = `
-                    <div class="legend-color" style="background-color: ${color};"></div>
-                    <span>${activity}</span>
-                `;
-                legendItems.appendChild(div);
-            });
+            updateLegend();
         }
 
-        // Iniciar cuando el DOM esté cargado
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initApp);
         } else {
