@@ -1,26 +1,52 @@
 [
   {
-    "filename": "0101_01_IMG_9308.jpg",
-    "lat": 38.9932,
-    "lng": 1.5633,
-    "activity": "Opening Circle",
-    "place": "Bosque Cala Pada",
-    "people": [
-      "Francesco",
-      "Karenina"
+    "day": "1",
+    "activity": "Yoga",
+    "persons": [
+      "Ana",
+      "Luis"
     ],
-    "url": "images/0101_01_IMG_9308.jpg"
+    "gps": [
+      39.9,
+      4.1
+    ],
+    "url": "images/dia1_yoga.jpg"
   },
   {
-    "filename": "0101_02_IMG_9295.jpg",
-    "lat": 38.9932,
-    "lng": 1.5633,
-    "activity": "Opening Circle",
-    "place": "Bosque Cala Pada",
-    "people": [
-      "Claudia",
-      "Jessi"
+    "day": "1",
+    "activity": "Danza",
+    "persons": [
+      "Carlos"
     ],
-    "url": "images/0101_02_IMG_9295.jpg"
+    "gps": [
+      39.91,
+      4.11
+    ],
+    "url": "images/dia1_danza.jpg"
+  },
+  {
+    "day": "2",
+    "activity": "Meditación",
+    "persons": [
+      "Marta"
+    ],
+    "gps": [
+      39.92,
+      4.12
+    ],
+    "url": "images/dia2_meditacion.jpg"
+  },
+  {
+    "day": "3",
+    "activity": "Senderismo",
+    "persons": [
+      "Luis",
+      "Marta"
+    ],
+    "gps": [
+      39.93,
+      4.13
+    ],
+    "url": "images/dia3_senderismo.jpg"
   }
 ]

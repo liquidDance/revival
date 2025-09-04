@@ -2,18 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Liquid Dance Revival</title>
+  <title>FotoMapa</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 </head>
 <body>
-  <h1>Liquid Dance Revival</h1>
-  <h2>Selecciona un día</h2>
-  <ul>
-    <li><a href="dia.html?dia=1">Día 1</a></li>
-    <li><a href="dia.html?dia=2">Día 2</a></li>
-    <li><a href="dia.html?dia=3">Día 3</a></li>
-    <li><a href="dia.html?dia=4">Día 4</a></li>
-    <li><a href="dia.html?dia=5">Día 5</a></li>
-  </ul>
+  <header>
+    <h1>FotoMapa</h1>
+    <div id="filters">
+      <select id="dayFilter"><option value="">Todos los días</option></select>
+      <select id="activityFilter"><option value="">Todas las actividades</option></select>
+      <select id="personFilter"><option value="">Todas las personas</option></select>
+    </div>
+  </header>
+  <main>
+    <div id="map"></div>
+    <div id="gallery"></div>
+  </main>
+  <script src="script.js"></script>
 </body>
 </html>
