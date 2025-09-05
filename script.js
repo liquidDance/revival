@@ -3,26 +3,27 @@ const translations = {
     es: {
         subtitle: "Festival de Danza en el Agua - Ibiza 2025",
         daysTitle: "Días del Festival",
-        activitiesTitle: "Actividades",
+        activitiesTitle: "Actividades", 
         participantsTitle: "Participantes",
         legendTitle: "Leyenda - Día ",
         clearAll: "Deseleccionar",
         searchPlaceholder: "Buscar participante...",
         showInfo: "Mostrar info",
-        hideInfo: "Ocultar info",
+        hideInfo: "Ocultar info", 
         previous: "← Anterior",
         next: "Siguiente →",
         date: "Fecha",
         place: "Lugar",
         activity: "Actividad",
         people: "Personas",
-        noPhotos: "No hay fotos para esta actividad"
+        noPhotos: "No hay fotos para esta actividad",
+        viewFullscreen: "Ver en pantalla completa"
     },
     en: {
         subtitle: "Water Dance Festival - Ibiza 2025",
         daysTitle: "Festival Days",
         activitiesTitle: "Activities",
-        participantsTitle: "Participants",
+        participantsTitle: "Participants", 
         legendTitle: "Legend - Day ",
         clearAll: "Deselect all",
         searchPlaceholder: "Search participant...",
@@ -32,9 +33,10 @@ const translations = {
         next: "Next →",
         date: "Date",
         place: "Place",
-        activity: "Activity",
+        activity: "Activity", 
         people: "People",
-        noPhotos: "No photos for this activity"
+        noPhotos: "No photos for this activity",
+        viewFullscreen: "View fullscreen"
     }
 };
 
@@ -49,13 +51,16 @@ let activeFilters = {
     participants: []
 };
 let markersCluster = null;
+let fotosData = [];
 
-// Inicialización del mapa
-const map = L.map('map').setView([38.98, 1.30], 10);
+// Inicialización del mapa con estilo minimalista
+const map = L.map('map').setView([38.87222, 1.37306], 11); // Centrado en aeropuerto de Ibiza
 
-// Añadir capa del mapa
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+// Añadir capa del mapa con estilo minimalista
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
 }).addTo(map);
 
 // Capa para los marcadores (usando clustering)
@@ -69,9 +74,33 @@ map.addLayer(markersCluster);
 
 // ===== FUNCIONES PRINCIPALES =====
 
+// Cargar datos de fotos desde JSON
+async function loadFotosData() {
+    try {
+        const response = await fetch('data/fotos.json');
+        fotosData = await response.json();
+        console.log('Datos de fotos cargados:', fotosData.length, 'fotos');
+        createMarkers();
+        generateFilters();
+    } catch (error) {
+        console.error('Error cargando datos de fotos:', error);
+        fotosData = [];
+    }
+}
+
+// Extraer información de keywords
+function parseKeywords(keywords) {
+    if (!keywords || keywords.length < 2) return { day: null, activityCode: null };
+    
+    const day = parseInt(keywords[0]);
+    let activityCode = keywords[1].replace(/^\d+\s*/, ''); // Eliminar número inicial
+    
+    return { day, activityCode };
+}
+
 // Generar colores únicos para actividades
 function generateActivityColors(activities) {
-    const activityTypes = [...new Set(activities.map(a => a.activity))];
+    const activityTypes = [...new Set(activities)];
     const colors = [
         '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
         '#1abc9c', '#34495e', '#e67e22', '#27ae60', '#8e44ad'
@@ -83,6 +112,119 @@ function generateActivityColors(activities) {
     });
     
     return colorMap;
+}
+
+// Función para obtener fotos de una ubicación
+function getPhotosForLocation(lat, lng) {
+    return fotosData.filter(foto => {
+        if (!foto.location) return false;
+        
+        const [fotoLat, fotoLng] = foto.location.split(',').map(coord => parseFloat(coord.trim()));
+        const distance = Math.sqrt(Math.pow(fotoLat - lat, 2) + Math.pow(fotoLng - lng, 2));
+        
+        return distance < 0.001;
+    }).map(foto => {
+        const { day, activityCode } = parseKeywords(foto.keywords);
+        const fecha = foto.date ? formatDate(foto.date) : '';
+        const activityName = getActivityName(activityCode, currentLanguage);
+        
+        return {
+            src: foto.url,
+            date: fecha,
+            place: getLocationName(lat, lng),
+            activity: activityName,
+            people: [],
+            fullscreen: foto.url,
+            day: day
+        };
+    });
+}
+
+// Crear marcadores en el mapa
+function createMarkers() {
+    markersCluster.clearLayers();
+    
+    const locations = {};
+    
+    fotosData.forEach(foto => {
+        if (!foto.location) return;
+        
+        const [lat, lng] = foto.location.split(',').map(coord => parseFloat(coord.trim()));
+        const locationKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+        
+        if (!locations[locationKey]) {
+            locations[locationKey] = {
+                lat: lat,
+                lng: lng,
+                photos: [],
+                activities: new Set(),
+                days: new Set()
+            };
+        }
+        
+        const { day, activityCode } = parseKeywords(foto.keywords);
+        locations[locationKey].photos.push(foto);
+        if (activityCode) locations[locationKey].activities.add(activityCode);
+        if (day) locations[locationKey].days.add(day);
+    });
+    
+    Object.values(locations).forEach(location => {
+        const activityCodes = Array.from(location.activities);
+        const activities = activityCodes.map(code => getActivityName(code, currentLanguage));
+        const days = Array.from(location.days);
+        const activityColors = generateActivityColors(activityCodes);
+        
+        const dayMatch = activeFilters.days.length === 0 || 
+                         days.some(day => activeFilters.days.includes(day));
+        const activityMatch = activeFilters.activities.length === 0 || 
+                             activityCodes.some(code => activeFilters.activities.includes(code));
+        
+        if (dayMatch && activityMatch) {
+            const firstActivity = activityCodes[0];
+            const color = activityColors[firstActivity] || '#3498db';
+            
+            const marker = L.marker([location.lat, location.lng], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            });
+            
+            marker.bindPopup(`
+                <strong>${activities.join(', ')}</strong><br>
+                Días: ${days.join(', ')}<br>
+                Fotos: ${location.photos.length}<br>
+                <button onclick="showLocationPhotos(${location.lat}, ${location.lng})">Ver fotos</button>
+            `);
+            
+            markersCluster.addLayer(marker);
+        }
+    });
+}
+
+// Función auxiliar para formatear fecha
+function formatDate(dateString) {
+    if (!dateString) return '';
+    return dateString.split(' ')[0].replace(/:/g, '/');
+}
+
+// Función auxiliar para obtener nombre de ubicación
+function getLocationName(lat, lng) {
+    const places = {
+        '38.99322,1.56329': 'Bosque Cala Pada',
+        '38.99327,1.56183': 'Cala Pada',
+        '39.10877,1.51521': 'Playa S\'Arenal Petit, Portinatx',
+        '39.00181,1.54227': 'Willem',
+        '39.08958,1.45463': 'Cala Benirràs',
+        '38.83970,1.39704': 'ses Salines',
+        '38.83574,1.40067': 'Cala Pluma',
+        '38.87005,1.33973': 'sa Caleta',
+        '38.87222,1.37306': 'Aeropuerto de Ibiza'
+    };
+    
+    return places[`${lat.toFixed(5)},${lng.toFixed(5)}`] || '';
 }
 
 // Generar todos los filtros
@@ -97,7 +239,10 @@ function generateFilters() {
 // Generar filtros por día
 function generateDayFilters() {
     const dayFilters = document.getElementById('day-filters');
-    const uniqueDays = [...new Set(activitiesWithLocation.map(a => a.day))].sort();
+    const uniqueDays = [...new Set(fotosData.map(foto => {
+        const { day } = parseKeywords(foto.keywords);
+        return day;
+    }).filter(day => day !== null))].sort();
     
     dayFilters.innerHTML = '';
     uniqueDays.forEach(day => {
@@ -125,22 +270,30 @@ function updateActivityFilters() {
     
     let activitiesToShow = [];
     if (selectedDays.length > 0) {
-        activitiesToShow = [...new Set(activitiesWithLocation
-            .filter(a => selectedDays.includes(a.day))
-            .map(a => a.activity))].sort();
+        activitiesToShow = [...new Set(fotosData
+            .filter(foto => {
+                const { day } = parseKeywords(foto.keywords);
+                return day && selectedDays.includes(day);
+            })
+            .map(foto => {
+                const { activityCode } = parseKeywords(foto.keywords);
+                return activityCode;
+            })
+            .filter(code => code !== null))].sort();
     } else {
-        activitiesToShow = [...new Set(activitiesWithLocation.map(a => a.activity))].sort();
+        activitiesToShow = [...new Set(fotosData.map(foto => {
+            const { activityCode } = parseKeywords(foto.keywords);
+            return activityCode;
+        }).filter(code => code !== null))].sort();
     }
     
     activityFilters.innerHTML = '';
-    activitiesToShow.forEach(activity => {
+    activitiesToShow.forEach(activityCode => {
         const div = document.createElement('div');
         div.className = 'filter-option';
         div.innerHTML = `
-            <input type="checkbox" id="${slugify(activity)}" name="activity" value="${activity}">
-            <label for="${slugify(activity)}">${currentLanguage === 'es' ? 
-                activitiesWithLocation.find(a => a.activity === activity)?.activity_es || activity : 
-                activity}</label>
+            <input type="checkbox" id="${slugify(activityCode)}" name="activity" value="${activityCode}">
+            <label for="${slugify(activityCode)}">${getActivityName(activityCode, currentLanguage)}</label>
         `;
         activityFilters.appendChild(div);
     });
@@ -243,6 +396,7 @@ function updateLanguage() {
     document.getElementById('toggle-metadata').textContent = translations[currentLanguage].showInfo;
     document.getElementById('prev-photo').textContent = translations[currentLanguage].previous;
     document.getElementById('next-photo').textContent = translations[currentLanguage].next;
+    document.getElementById('fullscreen-btn').textContent = translations[currentLanguage].viewFullscreen;
     
     document.querySelectorAll('.metadata-label').forEach((el, index) => {
         const labels = [translations[currentLanguage].date, translations[currentLanguage].place, 
@@ -252,6 +406,7 @@ function updateLanguage() {
     
     updateActivityFilters();
     updateLegend();
+    createMarkers();
 }
 
 // Actualizar filtros activos
@@ -279,17 +434,25 @@ function updateLegend() {
         const day = activeFilters.days[0];
         document.getElementById('legend-title').textContent = translations[currentLanguage].legendTitle + day;
         
-        const dayActivities = activitiesWithLocation.filter(a => a.day === day);
+        const dayActivities = [...new Set(fotosData
+            .filter(foto => {
+                const { day: fotoDay } = parseKeywords(foto.keywords);
+                return fotoDay === day;
+            })
+            .map(foto => {
+                const { activityCode } = parseKeywords(foto.keywords);
+                return activityCode;
+            })
+            .filter(code => code !== null))];
+        
         const activityColors = generateActivityColors(dayActivities);
         
-        Object.entries(activityColors).forEach(([activity, color]) => {
+        dayActivities.forEach(activityCode => {
             const div = document.createElement('div');
             div.className = 'legend-item';
             div.innerHTML = `
-                <div class="legend-color" style="background-color: ${color};"></div>
-                <span>${currentLanguage === 'es' ? 
-                    dayActivities.find(a => a.activity === activity)?.activity_es || activity : 
-                    activity}</span>
+                <div class="legend-color" style="background-color: ${activityColors[activityCode]};"></div>
+                <span>${getActivityName(activityCode, currentLanguage)}</span>
             `;
             legendItems.appendChild(div);
         });
@@ -298,107 +461,22 @@ function updateLegend() {
     }
 }
 
-// Crear marcadores en el mapa
-function createMarkers() {
-    markersCluster.clearLayers();
-    const activityColors = generateActivityColors(activitiesWithLocation);
+// Mostrar fotos de una ubicación
+function showLocationPhotos(lat, lng) {
+    currentPhotos = getPhotosForLocation(lat, lng);
     
-    activitiesWithLocation.forEach(activity => {
-        const dayMatch = activeFilters.days.length === 0 || activeFilters.days.includes(activity.day);
-        const activityMatch = activeFilters.activities.length === 0 || activeFilters.activities.includes(activity.activity);
-        
-        let participantMatch = activeFilters.participants.length === 0;
-        if (!participantMatch && activity.participants.length > 0) {
-            participantMatch = activeFilters.participants.some(participant => 
-                activity.participants.includes(participant)
-            );
-        }
-        
-        if (dayMatch && activityMatch && participantMatch) {
-            const marker = L.marker([activity.lat, activity.lng], {
-                icon: L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div style="background-color: ${activityColors[activity.activity]}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                })
-            });
-            
-            const activityName = currentLanguage === 'es' ? activity.activity_es : activity.activity;
-            marker.bindPopup(`
-                <strong>${activity.place}</strong><br>
-                <em>${activityName}</em><br>
-                ${translations[currentLanguage].daysTitle.slice(0, -1)}: ${activity.day}<br>
-                ${activity.participants.length > 0 ? translations[currentLanguage].people + ': ' + activity.participants.join(', ') + '<br>' : ''}
-                <button onclick="showLocationPhotos('${activity.id}')">Ver fotos</button>
-            `);
-            
-            markersCluster.addLayer(marker);
-        }
-    });
-}
-
-// Función para obtener fotos de una actividad
-function getPhotosForActivity(activityId) {
-    const activity = allActivities.find(a => a.id === activityId);
-    if (!activity) return [];
-    
-    // Esta función debe ser adaptada a tu estructura real de archivos
-    // Aquí se simula la obtención de fotos
-    
-    // EJEMPLO: Para la actividad "Opening Circle" del día 1
-    if (activityId === "0101") {
-        return [
-            {
-                src: "fotos/dia1/opening-circle/foto1.jpg",
-                date: activity.date,
-                place: activity.place,
-                activity: currentLanguage === 'es' ? activity.activity_es : activity.activity,
-                people: ["Ana", "Carlos", "María"] // Personas que aparecen en la foto
-            },
-            {
-                src: "fotos/dia1/opening-circle/foto2.jpg",
-                date: activity.date,
-                place: activity.place,
-                activity: currentLanguage === 'es' ? activity.activity_es : activity.activity,
-                people: ["Juan", "Laura", "Sofía"]
-            }
-        ];
+    if (currentPhotos.length === 0) {
+        alert(translations[currentLanguage].noPhotos);
+        return;
     }
     
-    // EJEMPLO: Para la actividad "Journey into the flow" del día 1
-    if (activityId === "0102") {
-        return [
-            {
-                src: "fotos/dia1/journey-into-the-flow/foto1.jpg",
-                date: activity.date,
-                place: activity.place,
-                activity: currentLanguage === 'es' ? activity.activity_es : activity.activity,
-                people: ["Martin", "Tanja", "Aitor"]
-            }
-        ];
-    }
-    
-    // Añadir más casos para cada actividad...
-    
-    // Por defecto, devolver array vacío si no hay fotos
-    return [];
-}
-
-// Mostrar fotos de una actividad
-function showLocationPhotos(activityId) {
-    const activity = allActivities.find(a => a.id === activityId);
-    if (!activity) return;
-    
-    const activityName = currentLanguage === 'es' ? activity.activity_es : activity.activity;
-    document.getElementById('modal-location-title').textContent = `${activity.place} - ${activityName}`;
-    
-    currentPhotos = getPhotosForActivity(activityId);
-    currentLocationId = activityId;
+    const firstPhoto = currentPhotos[0];
+    document.getElementById('modal-location-title').textContent = 
+        `${firstPhoto.activity} - ${translations[currentLanguage].daysTitle.slice(0, -1)} ${firstPhoto.day}`;
     
     renderPhotoGrid();
+    showPhotoViewer(0);
     document.getElementById('photo-modal').style.display = 'flex';
-    document.getElementById('photo-viewer').style.display = 'none';
 }
 
 // Renderizar grid de miniaturas
@@ -441,7 +519,15 @@ function showPhotoViewer(photoIndex) {
         thumb.classList.toggle('active', idx === photoIndex);
     });
     
-    document.getElementById('photo-viewer').style.display = 'flex';
+    const activeThumb = document.querySelectorAll('.photo-thumb')[photoIndex];
+    if (activeThumb) {
+        activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+}
+
+// Función para abrir imagen en pantalla completa
+function openFullscreenImage(src) {
+    window.open(src, '_blank');
 }
 
 // Helper para crear slugs
@@ -474,6 +560,18 @@ document.getElementById('toggle-metadata').addEventListener('click', function() 
     this.textContent = isVisible ? translations[currentLanguage].showInfo : translations[currentLanguage].hideInfo;
 });
 
+document.getElementById('fullscreen-btn').addEventListener('click', function() {
+    if (currentPhotos.length > 0) {
+        openFullscreenImage(currentPhotos[currentPhotoIndex].fullscreen);
+    }
+});
+
+document.getElementById('large-photo').addEventListener('click', function() {
+    if (currentPhotos.length > 0) {
+        openFullscreenImage(currentPhotos[currentPhotoIndex].fullscreen);
+    }
+});
+
 document.querySelector('.close-modal').addEventListener('click', () => {
     document.getElementById('photo-modal').style.display = 'none';
 });
@@ -487,10 +585,7 @@ window.addEventListener('click', (event) => {
 
 // ===== INICIALIZACIÓN =====
 function initApp() {
-    generateFilters();
-    updateActivityFilters();
-    createMarkers();
-    updateLegend();
+    loadFotosData();
 }
 
 if (document.readyState === 'loading') {

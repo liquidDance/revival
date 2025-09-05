@@ -64,18 +64,18 @@
         </div>
     </div>
     
+    <!-- Modal para mostrar fotos -->
     <div class="modal" id="photo-modal">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
             <h2 class="location-title" id="modal-location-title"></h2>
             
             <div class="photos-container">
-                <div class="photos-grid" id="photos-grid"></div>
-                
                 <div class="photo-viewer" id="photo-viewer">
                     <div class="viewer-header">
                         <span id="photo-counter"></span>
                         <button id="toggle-metadata">Mostrar info</button>
+                        <button class="fullscreen-btn" id="fullscreen-btn">Ver pantalla completa</button>
                     </div>
                     <img id="large-photo" src="" alt="Foto del evento">
                     <div class="photo-metadata" id="photo-metadata">
@@ -101,12 +101,19 @@
                         <button class="nav-btn" id="next-photo">Siguiente →</button>
                     </div>
                 </div>
+                
+                <div class="thumbnails-container">
+                    <div class="photos-grid" id="photos-grid"></div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    
+    <!-- Archivos locales -->
     <script src="data/participants.js"></script>
     <script src="data/activities.js"></script>
     <script src="script.js"></script>
