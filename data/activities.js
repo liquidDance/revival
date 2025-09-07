@@ -1,70 +1,377 @@
-// Mapeo de códigos de actividad a nombres legibles
-const activityNames = {
-    "Opening_Circle": {
-        en: "Opening Circle",
-        es: "Círculo de apertura"
+// Datos convertidos desde el CSV proporcionado
+const activitiesData = [
+    {
+        cod: "0000",
+        day: 1,
+        date: "06/08/25",
+        activity_en: "Arrival on the island",
+        activity_es: "Llegada a la isla",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Airport",
+        place_es: "Aeropuerto",
+        lat: 38.87732,
+        lng: 1.37058,
+        hasFacilitator: false
     },
-    "Journey_into_the_flow": {
-        en: "Journey into the flow", 
-        es: "Viaje hacia la fluidez"
+    {
+        cod: "0101",
+        day: 1, 
+        date: "06/08/25",
+        activity_en: "Opening circle",
+        activity_es: "Círculo de apertura",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Cala Pada Forest",
+        place_es: "Bosque Cala Pada",
+        lat: 38.99322,
+        lng: 1.56329,
+        hasFacilitator: false
     },
-    "Awaken_Flow_Yoga_playful_connection": {
-        en: "Awaken Flow - Yoga & playful connection",
-        es: "Despertar del flujo - Yoga y conexión lúdica"
+    {
+        cod: "0102",
+        day: 1,
+        date: "06/08/25",
+        activity_en: "Journey into the flow",
+        activity_es: "Viaje hacia la fluidez",
+        facilitator_en: "Tanja/Martin",
+        facilitator_es: "Tanja/Martin",
+        place_en: "Cala Pada",
+        place_es: "Cala Pada",
+        lat: 38.99327,
+        lng: 1.56183,
+        hasFacilitator: true
     },
-    "Water_Rebozo": {
-        en: "Water-Rebozo",
-        es: "Rebozo de agua"
+    {
+        cod: "0103",
+        day: 1,
+        date: "06/08/25",
+        activity_en: "Picnic",
+        activity_es: "Picnic",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Cala Pada Forest",
+        place_es: "Bosque Cala Pada",
+        lat: 38.99322,
+        lng: 1.56329,
+        hasFacilitator: false
     },
-    "Introduction_Soma_Water_Dance_Pool": {
-        en: "Introduction Soma-Water Dance in Pool",
-        es: "Introducción a la danza Soma-Agua en la piscina"
+    {
+        cod: "0104",
+        day: 1,
+        date: "06/08/25",
+        activity_en: "Sunset & chill, connect & dance",
+        activity_es: "Atardecer y relax, conexión y baile",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Cala Pada Forest",
+        place_es: "Bosque Cala Pada",
+        lat: 38.99322,
+        lng: 1.56329,
+        hasFacilitator: false
     },
-    "Ecstatic_Dance": {
-        en: "Ecstatic Dance",
-        es: "Danza extática"
+    {
+        cod: "0201",
+        day: 2,
+        date: "07/08/25",
+        activity_en: "Awaken flow - yoga & playful connection",
+        activity_es: "Despertar del flujo - yoga y conexión lúdica",
+        facilitator_en: "Zara",
+        facilitator_es: "Zara",
+        place_en: "Playa S'Arenal Petit, Portinatx",
+        place_es: "Playa S'Arenal Petit, Portinatx",
+        lat: 39.10877,
+        lng: 1.51521,
+        hasFacilitator: true
     },
-    "Morning_Practice": {
-        en: "Morning Practice",
-        es: "Práctica matutina"
+    {
+        cod: "0202",
+        day: 2,
+        date: "07/08/25",
+        activity_en: "Water-rebozo",
+        activity_es: "Rebozo de agua",
+        facilitator_en: "Anuja",
+        facilitator_es: "Anuja",
+        place_en: "Playa S'Arenal Petit, Portinatx",
+        place_es: "Playa S'Arenal Petit, Portinatx",
+        lat: 39.10877,
+        lng: 1.51521,
+        hasFacilitator: true
     },
-    "Deep_Dance_Swarm_sea_weed": {
-        en: "Deep Dance Swarm among the sea weed",
-        es: "Danza profunda Enjambre entre las algas"
+    {
+        cod: "0203",
+        day: 2,
+        date: "07/08/25",
+        activity_en: "Picnic, sharing, siesta, connection, play",
+        activity_es: "Picnic, compartir, siesta, conexión, juego",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Playa S'Arenal Petit, Portinatx",
+        place_es: "Playa S'Arenal Petit, Portinatx",
+        lat: 39.10877,
+        lng: 1.51521,
+        hasFacilitator: false
     },
-    "Morning_Practice_Soma_Voice": {
-        en: "Morning Practice - Soma & Voice",
-        es: "Práctica matutina - Soma y voz"
+    {
+        cod: "0204",
+        day: 2,
+        date: "07/08/25",
+        activity_en: "Contact improv in water",
+        activity_es: "Contact improvisación en el agua",
+        facilitator_en: "Tanja",
+        facilitator_es: "Tanja",
+        place_en: "Playa S'Arenal Petit, Portinatx",
+        place_es: "Playa S'Arenal Petit, Portinatx",
+        lat: 39.10877,
+        lng: 1.51521,
+        hasFacilitator: true
     },
-    "Partner_Water_Dance": {
-        en: "Partner-Water-Dance",
-        es: "Danza en pareja en el agua"
+    {
+        cod: "0205",
+        day: 2,
+        date: "07/08/25",
+        activity_en: "Picnic",
+        activity_es: "Picnic",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Playa S'Arenal Petit, Portinatx",
+        place_es: "Playa S'Arenal Petit, Portinatx",
+        lat: 39.10877,
+        lng: 1.51521,
+        hasFacilitator: false
     },
-    "Contact_Improv_Water_Rebozo": {
-        en: "Contact Improv and Water Rebozo",
-        es: "Contact Improvisación y Rebozo de agua"
+    {
+        cod: "0206",
+        day: 2,
+        date: "07/08/25",
+        activity_en: "Introduction soma-water dance in pool",
+        activity_es: "Introducción a la danza soma-agua en la piscina",
+        facilitator_en: "Martin",
+        facilitator_es: "Martin",
+        place_en: "Willem",
+        place_es: "Willem",
+        lat: 39.00181,
+        lng: 1.54227,
+        hasFacilitator: true
     },
-    "Water_Blessing_Ceremony_Sunset_Jam": {
-        en: "Water Blessing Ceremony & Sunset Jam",
-        es: "Ceremonia de bendición del agua y jam al atardecer"
+    {
+        cod: "0207",
+        day: 2,
+        date: "07/08/25",
+        activity_en: "Ecstatic dance",
+        activity_es: "Danza extática",
+        facilitator_en: "Willem",
+        facilitator_es: "Willem",
+        place_en: "Willem",
+        place_es: "Willem",
+        lat: 39.00181,
+        lng: 1.54227,
+        hasFacilitator: true
     },
-    "Moving_Sharing_Caring_Dancing_Flowing_Closing": {
-        en: "Moving, Sharing, Caring, Dancing, Flowing & Closing",
-        es: "Moviéndose, compartiendo, cuidando, bailando, fluyendo y cerrando"
+    {
+        cod: "0301",
+        day: 3,
+        date: "08/08/25",
+        activity_en: "Morning practice",
+        activity_es: "Práctica matutina",
+        facilitator_en: "Anuja",
+        facilitator_es: "Anuja",
+        place_en: "Cala Benirràs",
+        place_es: "Cala Benirràs",
+        lat: 39.08958,
+        lng: 1.45463,
+        hasFacilitator: true
+    },
+    {
+        cod: "0302",
+        day: 3,
+        date: "08/08/25",
+        activity_en: "Somatic journey",
+        activity_es: "Viaje somático con",
+        facilitator_en: "Tanja/Martin",
+        facilitator_es: "Tanja/Martin",
+        place_en: "Cala Benirràs",
+        place_es: "Cala Benirràs",
+        lat: 39.08958,
+        lng: 1.45463,
+        hasFacilitator: true
+    },
+    {
+        cod: "0303",
+        day: 3,
+        date: "08/08/25",
+        activity_en: "Picnic, sharing, siesta, connection, play",
+        activity_es: "Picnic, compartir, siesta, conexión, juego",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Cala Benirràs",
+        place_es: "Cala Benirràs",
+        lat: 39.08958,
+        lng: 1.45463,
+        hasFacilitator: false
+    },
+    {
+        cod: "0304",
+        day: 3,
+        date: "08/08/25",
+        activity_en: "Deep dance \"swarm among the sea weed\"",
+        activity_es: "Danza profunda \"enjambre entre las algas\"",
+        facilitator_en: "Alex",
+        facilitator_es: "Alex",
+        place_en: "Cala Benirràs",
+        place_es: "Cala Benirràs",
+        lat: 39.08958,
+        lng: 1.45463,
+        hasFacilitator: true
+    },
+    {
+        cod: "0305",
+        day: 3,
+        date: "08/08/25",
+        activity_en: "Picnic",
+        activity_es: "Picnic",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Cala Benirràs",
+        place_es: "Cala Benirràs",
+        lat: 39.08958,
+        lng: 1.45463,
+        hasFacilitator: false
+    },
+    {
+        cod: "0306",
+        day: 3,
+        date: "08/08/25",
+        activity_en: "Sunset & chill, connect & dance",
+        activity_es: "Atardecer y relax, conexión y baile",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Cala Benirràs",
+        place_es: "Cala Benirràs",
+        lat: 39.08958,
+        lng: 1.45463,
+        hasFacilitator: false
+    },
+    {
+        cod: "0401",
+        day: 4,
+        date: "09/08/25",
+        activity_en: "Morning practice - soma & voice",
+        activity_es: "Práctica matutina - soma y voz",
+        facilitator_en: "Rikki",
+        facilitator_es: "Rikki",
+        place_en: "ses Salines",
+        place_es: "ses Salines",
+        lat: 38.83970,
+        lng: 1.39704,
+        hasFacilitator: true
+    },
+    {
+        cod: "0402",
+        day: 4,
+        date: "09/08/25",
+        activity_en: "Partner-water-dance",
+        activity_es: "Danza en pareja en el agua",
+        facilitator_en: "Alex",
+        facilitator_es: "Alex",
+        place_en: "Cala Pluma",
+        place_es: "Cala Pluma",
+        lat: 38.83574,
+        lng: 1.40067,
+        hasFacilitator: true
+    },
+    {
+        cod: "0403",
+        day: 4,
+        date: "09/08/25",
+        activity_en: "Picnic, sharing, siesta, connection, play",
+        activity_es: "Picnic, compartir, siesta, conexión, juego",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "ses Salines",
+        place_es: "ses Salines",
+        lat: 38.83970,
+        lng: 1.39704,
+        hasFacilitator: false
+    },
+    {
+        cod: "0404",
+        day: 4,
+        date: "09/08/25",
+        activity_en: "Contact improv and land rebozo",
+        activity_es: "Contact improvisación y rebozo en tierra",
+        facilitator_en: "Anuja",
+        facilitator_es: "Anuja",
+        place_en: "ses Salines",
+        place_es: "ses Salines",
+        lat: 38.83970,
+        lng: 1.39704,
+        hasFacilitator: true
+    },
+    {
+        cod: "0405",
+        day: 4,
+        date: "09/08/25",
+        activity_en: "Water blessing ceremony & sunset jam",
+        activity_es: "Ceremonia de bendición del agua y jam al atardecer",
+        facilitator_en: "Nati",
+        facilitator_es: "Nati",
+        place_en: "Cala Pluma",
+        place_es: "Cala Pluma",
+        lat: 38.83574,
+        lng: 1.40067,
+        hasFacilitator: true
+    },
+    {
+        cod: "0406",
+        day: 4,
+        date: "09/08/25",
+        activity_en: "Picnic",
+        activity_es: "Picnic",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "Cala Pluma",
+        place_es: "Cala Pluma",
+        lat: 38.83574,
+        lng: 1.40067,
+        hasFacilitator: false
+    },
+    {
+        cod: "0501",
+        day: 5,
+        date: "10/08/25",
+        activity_en: "Moving, sharing, caring, dancing, flowing &closing",
+        activity_es: "Moviéndose, compartiendo, cuidando, bailando, fluyendo y cerrando",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "sa Caleta",
+        place_es: "sa Caleta",
+        lat: 38.87005,
+        lng: 1.33973,
+        hasFacilitator: false
+    },
+    {
+        cod: "0502",
+        day: 5,
+        date: "10/08/25",
+        activity_en: "Picnic",
+        activity_es: "Picnic",
+        facilitator_en: "",
+        facilitator_es: "",
+        place_en: "sa Caleta",
+        place_es: "sa Caleta",
+        lat: 38.87005,
+        lng: 1.33973,
+        hasFacilitator: false
     }
-};
+];
 
-// Función para obtener nombre traducido de actividad
-function getActivityName(activityCode, language = 'es') {
-    return activityNames[activityCode]?.[language] || activityCode;
+// Función para obtener actividades por día
+function getActivitiesByDay(day) {
+    return activitiesData.filter(activity => activity.day === day);
 }
 
-// Extraer información limpia de keywords
-function parseKeywords(keywords) {
-    if (!keywords || keywords.length < 2) return { day: null, activityCode: null };
-    
-    const day = parseInt(keywords[0]);
-    let activityCode = keywords[1].replace(/^\d+\s*/, ''); // Eliminar número inicial
-    
-    return { day, activityCode };
+// Función para obtener actividad por código
+function getActivityByCod(cod) {
+    return activitiesData.find(activity => activity.cod === cod);
 }

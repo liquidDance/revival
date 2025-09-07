@@ -3,187 +3,78 @@ const translations = {
     es: {
         subtitle: "Festival de Danza en el Agua - Ibiza 2025",
         daysTitle: "Días del Festival",
-        activitiesTitle: "Actividades", 
-        participantsTitle: "Participantes",
-        legendTitle: "Leyenda - Día ",
-        clearAll: "Deseleccionar",
-        searchPlaceholder: "Buscar participante...",
-        showInfo: "Mostrar info",
-        hideInfo: "Ocultar info", 
+        activitiesTitle: "Actividades",
+        legendTitle: "Leyenda",
+        showInfo: "Mostrar información",
+        hideInfo: "Ocultar información",
+        viewFullscreen: "Ver pantalla completa",
         previous: "← Anterior",
         next: "Siguiente →",
-        date: "Fecha",
-        place: "Lugar",
-        activity: "Actividad",
-        people: "Personas",
-        noPhotos: "No hay fotos para esta actividad",
-        viewFullscreen: "Ver en pantalla completa"
+        date: "Fecha:",
+        place: "Lugar:",
+        activity: "Actividad:",
+        facilitator: "Facilitador:",
+        noPhotos: "No hay fotos para esta actividad"
     },
     en: {
         subtitle: "Water Dance Festival - Ibiza 2025",
         daysTitle: "Festival Days",
         activitiesTitle: "Activities",
-        participantsTitle: "Participants", 
-        legendTitle: "Legend - Day ",
-        clearAll: "Deselect all",
-        searchPlaceholder: "Search participant...",
-        showInfo: "Show info",
-        hideInfo: "Hide info",
+        legendTitle: "Legend",
+        showInfo: "Show information",
+        hideInfo: "Hide information",
+        viewFullscreen: "View fullscreen",
         previous: "← Previous",
         next: "Next →",
-        date: "Date",
-        place: "Place",
-        activity: "Activity", 
-        people: "People",
-        noPhotos: "No photos for this activity",
-        viewFullscreen: "View fullscreen"
+        date: "Date:",
+        place: "Place:",
+        activity: "Activity:",
+        facilitator: "Facilitator:",
+        noPhotos: "No photos for this activity"
     }
 };
 
 // Variables globales
 let currentLanguage = 'es';
-let currentLocationId = null;
+let currentActivity = null;
 let currentPhotos = [];
 let currentPhotoIndex = 0;
-let activeFilters = {
-    days: [],
-    activities: [],
-    participants: []
-};
-let markersCluster = null;
-let fotosData = [];
+let map;
+let markers = [];
 
-// Inicialización del mapa con estilo minimalista
-const map = L.map('map').setView([38.87222, 1.37306], 11); // Centrado en aeropuerto de Ibiza
-
-// Añadir capa del mapa con estilo minimalista
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
-}).addTo(map);
-
-// Capa para los marcadores (usando clustering)
-markersCluster = L.markerClusterGroup({
-    maxClusterRadius: 40,
-    spiderfyOnMaxZoom: true,
-    showCoverageOnHover: false,
-    zoomToBoundsOnClick: true
-});
-map.addLayer(markersCluster);
-
-// ===== FUNCIONES PRINCIPALES =====
-
-// Cargar datos de fotos desde JSON
-async function loadFotosData() {
-    try {
-        const response = await fetch('data/fotos.json');
-        fotosData = await response.json();
-        console.log('Datos de fotos cargados:', fotosData.length, 'fotos');
-        createMarkers();
-        generateFilters();
-    } catch (error) {
-        console.error('Error cargando datos de fotos:', error);
-        fotosData = [];
-    }
-}
-
-// Extraer información de keywords
-function parseKeywords(keywords) {
-    if (!keywords || keywords.length < 2) return { day: null, activityCode: null };
+// Inicialización del mapa
+function initMap() {
+    map = L.map('map').setView([38.87222, 1.37306], 11);
     
-    const day = parseInt(keywords[0]);
-    let activityCode = keywords[1].replace(/^\d+\s*/, ''); // Eliminar número inicial
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
     
-    return { day, activityCode };
-}
-
-// Generar colores únicos para actividades
-function generateActivityColors(activities) {
-    const activityTypes = [...new Set(activities)];
-    const colors = [
-        '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
-        '#1abc9c', '#34495e', '#e67e22', '#27ae60', '#8e44ad'
-    ];
-    
-    const colorMap = {};
-    activityTypes.forEach((type, i) => {
-        colorMap[type] = colors[i % colors.length];
-    });
-    
-    return colorMap;
-}
-
-// Función para obtener fotos de una ubicación
-function getPhotosForLocation(lat, lng) {
-    return fotosData.filter(foto => {
-        if (!foto.location) return false;
-        
-        const [fotoLat, fotoLng] = foto.location.split(',').map(coord => parseFloat(coord.trim()));
-        const distance = Math.sqrt(Math.pow(fotoLat - lat, 2) + Math.pow(fotoLng - lng, 2));
-        
-        return distance < 0.001;
-    }).map(foto => {
-        const { day, activityCode } = parseKeywords(foto.keywords);
-        const fecha = foto.date ? formatDate(foto.date) : '';
-        const activityName = getActivityName(activityCode, currentLanguage);
-        
-        return {
-            src: foto.url,
-            date: fecha,
-            place: getLocationName(lat, lng),
-            activity: activityName,
-            people: [],
-            fullscreen: foto.url,
-            day: day
-        };
-    });
+    createMarkers();
 }
 
 // Crear marcadores en el mapa
 function createMarkers() {
-    markersCluster.clearLayers();
+    // Limpiar marcadores existentes
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
     
-    const locations = {};
+    // Colores para diferentes tipos de actividades
+    const colors = {
+        airport: '#e74c3c',
+        normal: '#3498db',
+        withFacilitator: '#2ecc71'
+    };
     
-    fotosData.forEach(foto => {
-        if (!foto.location) return;
-        
-        const [lat, lng] = foto.location.split(',').map(coord => parseFloat(coord.trim()));
-        const locationKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
-        
-        if (!locations[locationKey]) {
-            locations[locationKey] = {
-                lat: lat,
-                lng: lng,
-                photos: [],
-                activities: new Set(),
-                days: new Set()
-            };
-        }
-        
-        const { day, activityCode } = parseKeywords(foto.keywords);
-        locations[locationKey].photos.push(foto);
-        if (activityCode) locations[locationKey].activities.add(activityCode);
-        if (day) locations[locationKey].days.add(day);
-    });
-    
-    Object.values(locations).forEach(location => {
-        const activityCodes = Array.from(location.activities);
-        const activities = activityCodes.map(code => getActivityName(code, currentLanguage));
-        const days = Array.from(location.days);
-        const activityColors = generateActivityColors(activityCodes);
-        
-        const dayMatch = activeFilters.days.length === 0 || 
-                         days.some(day => activeFilters.days.includes(day));
-        const activityMatch = activeFilters.activities.length === 0 || 
-                             activityCodes.some(code => activeFilters.activities.includes(code));
-        
-        if (dayMatch && activityMatch) {
-            const firstActivity = activityCodes[0];
-            const color = activityColors[firstActivity] || '#3498db';
+    activitiesData.forEach(activity => {
+        if (activity.lat && activity.lng) {
+            // Determinar color según tipo de actividad
+            let color = colors.normal;
+            if (activity.cod === "0000") color = colors.airport;
+            else if (activity.hasFacilitator) color = colors.withFacilitator;
             
-            const marker = L.marker([location.lat, location.lng], {
+            // Crear marcadores personalizados
+            const marker = L.marker([activity.lat, activity.lng], {
                 icon: L.divIcon({
                     className: 'custom-marker',
                     html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
@@ -192,236 +83,26 @@ function createMarkers() {
                 })
             });
             
-            marker.bindPopup(`
-                <strong>${activities.join(', ')}</strong><br>
-                Días: ${days.join(', ')}<br>
-                Fotos: ${location.photos.length}<br>
-                <button onclick="showLocationPhotos(${location.lat}, ${location.lng})">Ver fotos</button>
-            `);
+            // Contenido del popup
+            const activityName = currentLanguage === 'es' ? activity.activity_es : activity.activity_en;
+            const placeName = currentLanguage === 'es' ? activity.place_es : activity.place_en;
             
-            markersCluster.addLayer(marker);
-        }
-    });
-}
-
-// Función auxiliar para formatear fecha
-function formatDate(dateString) {
-    if (!dateString) return '';
-    return dateString.split(' ')[0].replace(/:/g, '/');
-}
-
-// Función auxiliar para obtener nombre de ubicación
-function getLocationName(lat, lng) {
-    const places = {
-        '38.99322,1.56329': 'Bosque Cala Pada',
-        '38.99327,1.56183': 'Cala Pada',
-        '39.10877,1.51521': 'Playa S\'Arenal Petit, Portinatx',
-        '39.00181,1.54227': 'Willem',
-        '39.08958,1.45463': 'Cala Benirràs',
-        '38.83970,1.39704': 'ses Salines',
-        '38.83574,1.40067': 'Cala Pluma',
-        '38.87005,1.33973': 'sa Caleta',
-        '38.87222,1.37306': 'Aeropuerto de Ibiza'
-    };
-    
-    return places[`${lat.toFixed(5)},${lng.toFixed(5)}`] || '';
-}
-
-// Generar todos los filtros
-function generateFilters() {
-    generateDayFilters();
-    generateActivityFilters();
-    generateParticipantFilters();
-    setupClearButtons();
-    setupLanguageToggle();
-}
-
-// Generar filtros por día
-function generateDayFilters() {
-    const dayFilters = document.getElementById('day-filters');
-    const uniqueDays = [...new Set(fotosData.map(foto => {
-        const { day } = parseKeywords(foto.keywords);
-        return day;
-    }).filter(day => day !== null))].sort();
-    
-    dayFilters.innerHTML = '';
-    uniqueDays.forEach(day => {
-        const div = document.createElement('div');
-        div.className = 'filter-option';
-        div.innerHTML = `
-            <input type="checkbox" id="day-${day}" name="day" value="${day}">
-            <label for="day-${day}">Día ${day}</label>
-        `;
-        dayFilters.appendChild(div);
-    });
-    
-    document.querySelectorAll('input[name="day"]').forEach(input => {
-        input.addEventListener('change', function() {
-            updateActiveFilters();
-            updateActivityFilters();
-        });
-    });
-}
-
-// Actualizar filtros de actividades según día seleccionado
-function updateActivityFilters() {
-    const selectedDays = Array.from(document.querySelectorAll('input[name="day"]:checked')).map(input => parseInt(input.value));
-    const activityFilters = document.getElementById('activity-filters');
-    
-    let activitiesToShow = [];
-    if (selectedDays.length > 0) {
-        activitiesToShow = [...new Set(fotosData
-            .filter(foto => {
-                const { day } = parseKeywords(foto.keywords);
-                return day && selectedDays.includes(day);
-            })
-            .map(foto => {
-                const { activityCode } = parseKeywords(foto.keywords);
-                return activityCode;
-            })
-            .filter(code => code !== null))].sort();
-    } else {
-        activitiesToShow = [...new Set(fotosData.map(foto => {
-            const { activityCode } = parseKeywords(foto.keywords);
-            return activityCode;
-        }).filter(code => code !== null))].sort();
-    }
-    
-    activityFilters.innerHTML = '';
-    activitiesToShow.forEach(activityCode => {
-        const div = document.createElement('div');
-        div.className = 'filter-option';
-        div.innerHTML = `
-            <input type="checkbox" id="${slugify(activityCode)}" name="activity" value="${activityCode}">
-            <label for="${slugify(activityCode)}">${getActivityName(activityCode, currentLanguage)}</label>
-        `;
-        activityFilters.appendChild(div);
-    });
-    
-    document.querySelectorAll('input[name="activity"]').forEach(input => {
-        input.addEventListener('change', updateActiveFilters);
-    });
-}
-
-// Generar filtros por participante
-function generateParticipantFilters() {
-    const participantFilters = document.getElementById('participant-filters');
-    const searchInput = document.getElementById('participant-search');
-    
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        renderParticipantFilters(searchTerm);
-    });
-    
-    renderParticipantFilters();
-}
-
-// Renderizar filtros de participantes
-function renderParticipantFilters(searchTerm = '') {
-    const participantFilters = document.getElementById('participant-filters');
-    participantFilters.innerHTML = '';
-    
-    const filteredParticipants = allParticipants.filter(p => 
-        p.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    
-    filteredParticipants.forEach(participant => {
-        const div = document.createElement('div');
-        div.className = 'filter-option';
-        div.innerHTML = `
-            <input type="checkbox" id="${slugify(participant)}" name="participant" value="${participant}">
-            <label for="${slugify(participant)}">${participant}</label>
-        `;
-        participantFilters.appendChild(div);
-    });
-    
-    document.querySelectorAll('input[name="participant"]').forEach(input => {
-        input.addEventListener('change', updateActiveFilters);
-    });
-}
-
-// Configurar botones de deseleccionar
-function setupClearButtons() {
-    document.getElementById('clear-days').addEventListener('click', () => {
-        document.querySelectorAll('input[name="day"]:checked').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        updateActiveFilters();
-        updateActivityFilters();
-    });
-    
-    document.getElementById('clear-activities').addEventListener('click', () => {
-        document.querySelectorAll('input[name="activity"]:checked').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        updateActiveFilters();
-    });
-    
-    document.getElementById('clear-participants').addEventListener('click', () => {
-        document.querySelectorAll('input[name="participant"]:checked').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        updateActiveFilters();
-    });
-}
-
-// Configurar toggle de idioma
-function setupLanguageToggle() {
-    document.getElementById('lang-es').addEventListener('click', () => {
-        if (currentLanguage !== 'es') {
-            currentLanguage = 'es';
-            document.getElementById('lang-es').classList.add('active');
-            document.getElementById('lang-en').classList.remove('active');
-            updateLanguage();
+            let popupContent = `<strong>${activityName}</strong><br>${placeName}`;
+            
+            if (activity.hasFacilitator) {
+                const facilitator = currentLanguage === 'es' ? activity.facilitator_es : activity.facilitator_en;
+                popupContent += `<br>${currentLanguage === 'es' ? 'Facilitador: ' : 'Facilitator: '}${facilitator}`;
+            }
+            
+            popupContent += `<br><button onclick="showActivityPhotos('${activity.cod}')">${currentLanguage === 'es' ? 'Ver fotos' : 'View photos'}</button>`;
+            
+            marker.bindPopup(popupContent);
+            marker.addTo(map);
+            markers.push(marker);
         }
     });
     
-    document.getElementById('lang-en').addEventListener('click', () => {
-        if (currentLanguage !== 'en') {
-            currentLanguage = 'en';
-            document.getElementById('lang-en').classList.add('active');
-            document.getElementById('lang-es').classList.remove('active');
-            updateLanguage();
-        }
-    });
-}
-
-// Actualizar idioma de la interfaz
-function updateLanguage() {
-    document.getElementById('subtitle').textContent = translations[currentLanguage].subtitle;
-    document.getElementById('days-title').textContent = translations[currentLanguage].daysTitle;
-    document.getElementById('activities-title').textContent = translations[currentLanguage].activitiesTitle;
-    document.getElementById('participants-title').textContent = translations[currentLanguage].participantsTitle;
-    document.getElementById('participant-search').placeholder = translations[currentLanguage].searchPlaceholder;
-    document.getElementById('toggle-metadata').textContent = translations[currentLanguage].showInfo;
-    document.getElementById('prev-photo').textContent = translations[currentLanguage].previous;
-    document.getElementById('next-photo').textContent = translations[currentLanguage].next;
-    document.getElementById('fullscreen-btn').textContent = translations[currentLanguage].viewFullscreen;
-    
-    document.querySelectorAll('.metadata-label').forEach((el, index) => {
-        const labels = [translations[currentLanguage].date, translations[currentLanguage].place, 
-                        translations[currentLanguage].activity, translations[currentLanguage].people];
-        if (labels[index]) el.textContent = labels[index] + ':';
-    });
-    
-    updateActivityFilters();
-    updateLegend();
-    createMarkers();
-}
-
-// Actualizar filtros activos
-function updateActiveFilters() {
-    activeFilters = {
-        days: Array.from(document.querySelectorAll('input[name="day"]:checked')).map(input => parseInt(input.value)),
-        activities: Array.from(document.querySelectorAll('input[name="activity"]:checked')).map(input => input.value),
-        participants: Array.from(document.querySelectorAll('input[name="participant"]:checked')).map(input => input.value)
-    };
-    
-    document.getElementById('clear-days').style.display = activeFilters.days.length > 0 ? 'block' : 'none';
-    document.getElementById('clear-activities').style.display = activeFilters.activities.length > 0 ? 'block' : 'none';
-    document.getElementById('clear-participants').style.display = activeFilters.participants.length > 0 ? 'block' : 'none';
-    
-    createMarkers();
+    // Actualizar leyenda
     updateLegend();
 }
 
@@ -430,52 +111,63 @@ function updateLegend() {
     const legendItems = document.getElementById('legend-items');
     legendItems.innerHTML = '';
     
-    if (activeFilters.days.length === 1) {
-        const day = activeFilters.days[0];
-        document.getElementById('legend-title').textContent = translations[currentLanguage].legendTitle + day;
-        
-        const dayActivities = [...new Set(fotosData
-            .filter(foto => {
-                const { day: fotoDay } = parseKeywords(foto.keywords);
-                return fotoDay === day;
-            })
-            .map(foto => {
-                const { activityCode } = parseKeywords(foto.keywords);
-                return activityCode;
-            })
-            .filter(code => code !== null))];
-        
-        const activityColors = generateActivityColors(dayActivities);
-        
-        dayActivities.forEach(activityCode => {
-            const div = document.createElement('div');
-            div.className = 'legend-item';
-            div.innerHTML = `
-                <div class="legend-color" style="background-color: ${activityColors[activityCode]};"></div>
-                <span>${getActivityName(activityCode, currentLanguage)}</span>
-            `;
-            legendItems.appendChild(div);
-        });
-    } else {
-        document.getElementById('legend-title').textContent = translations[currentLanguage].legendTitle;
-    }
+    const items = [
+        { color: '#e74c3c', label: currentLanguage === 'es' ? 'Aeropuerto' : 'Airport' },
+        { color: '#3498db', label: currentLanguage === 'es' ? 'Actividad' : 'Activity' },
+        { color: '#2ecc71', label: currentLanguage === 'es' ? 'Con facilitador' : 'With facilitator' }
+    ];
+    
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.innerHTML = `
+            <div class="legend-color" style="background-color: ${item.color};"></div>
+            <span>${item.label}</span>
+        `;
+        legendItems.appendChild(div);
+    });
 }
 
-// Mostrar fotos de una ubicación
-function showLocationPhotos(lat, lng) {
-    currentPhotos = getPhotosForLocation(lat, lng);
+// Obtener fotos de una actividad desde el manifest
+function getActivityPhotos(day, activityCode) {
+    const dayFolder = `dia${day}`;
     
-    if (currentPhotos.length === 0) {
-        alert(translations[currentLanguage].noPhotos);
-        return;
+    if (window.photoManifest && window.photoManifest[dayFolder] && window.photoManifest[dayFolder][activityCode]) {
+        return window.photoManifest[dayFolder][activityCode].map(photo => ({
+            original: photo.original,
+            sequential: photo.sequential,
+            path: `fotos/${dayFolder}/${activityCode}/${photo.original}`
+        }));
     }
     
-    const firstPhoto = currentPhotos[0];
-    document.getElementById('modal-location-title').textContent = 
-        `${firstPhoto.activity} - ${translations[currentLanguage].daysTitle.slice(0, -1)} ${firstPhoto.day}`;
+    return [];
+}
+
+// Mostrar fotos de una actividad
+function showActivityPhotos(activityCod) {
+    currentActivity = getActivityByCod(activityCod);
+    if (!currentActivity) return;
     
+    currentPhotos = getActivityPhotos(currentActivity.day, currentActivity.cod);
+    currentPhotoIndex = 0;
+    
+    // Actualizar título del modal
+    const activityName = currentLanguage === 'es' ? currentActivity.activity_es : currentActivity.activity_en;
+    document.getElementById('modal-title').textContent = activityName;
+    
+    // Renderizar miniaturas
     renderPhotoGrid();
-    showPhotoViewer(0);
+    
+    // Mostrar primera foto
+    if (currentPhotos.length > 0) {
+        showPhoto(0);
+        document.getElementById('photo-viewer').style.display = 'flex';
+    } else {
+        document.getElementById('photo-viewer').style.display = 'none';
+        document.getElementById('photos-grid').innerHTML = `<p>${translations[currentLanguage].noPhotos}</p>`;
+    }
+    
+    // Mostrar modal
     document.getElementById('photo-modal').style.display = 'flex';
 }
 
@@ -484,110 +176,188 @@ function renderPhotoGrid() {
     const photosGrid = document.getElementById('photos-grid');
     photosGrid.innerHTML = '';
     
-    if (currentPhotos.length === 0) {
-        photosGrid.innerHTML = `<p>${translations[currentLanguage].noPhotos}</p>`;
-        return;
-    }
-    
-    currentPhotos.forEach((photo, index) => {
-        const thumbContainer = document.createElement('div');
+    currentPhotos.forEach((photoInfo, index) => {
         const thumb = document.createElement('img');
-        thumb.src = photo.src;
-        thumb.alt = `Foto ${index + 1}`;
+        thumb.src = photoInfo.path;
+        thumb.alt = `Foto ${photoInfo.sequential}`;
         thumb.className = 'photo-thumb';
-        thumb.onclick = () => showPhotoViewer(index);
-        thumbContainer.appendChild(thumb);
-        photosGrid.appendChild(thumbContainer);
+        if (index === currentPhotoIndex) thumb.classList.add('active');
+        thumb.onclick = () => showPhoto(index);
+        photosGrid.appendChild(thumb);
     });
 }
 
-// Mostrar foto en visor
-function showPhotoViewer(photoIndex) {
-    if (photoIndex < 0 || photoIndex >= currentPhotos.length) return;
+// Mostrar foto específica
+function showPhoto(index) {
+    if (index < 0 || index >= currentPhotos.length) return;
     
-    currentPhotoIndex = photoIndex;
-    const photo = currentPhotos[photoIndex];
+    currentPhotoIndex = index;
+    const photoInfo = currentPhotos[index];
     
-    document.getElementById('large-photo').src = photo.src;
-    document.getElementById('photo-counter').textContent = `${photoIndex + 1} / ${currentPhotos.length}`;
-    document.getElementById('metadata-date').textContent = photo.date;
-    document.getElementById('metadata-place').textContent = photo.place;
-    document.getElementById('metadata-activity').textContent = photo.activity;
-    document.getElementById('metadata-people').textContent = photo.people.join(', ');
+    // Actualizar imagen principal
+    document.getElementById('main-photo').src = photoInfo.path;
     
-    document.querySelectorAll('.photo-thumb').forEach((thumb, idx) => {
-        thumb.classList.toggle('active', idx === photoIndex);
+    // Actualizar contador
+    document.getElementById('photo-counter').textContent = `${index + 1} / ${currentPhotos.length}`;
+    
+    // Actualizar información
+    document.getElementById('info-date').textContent = currentActivity.date;
+    document.getElementById('info-place').textContent = currentLanguage === 'es' ? currentActivity.place_es : currentActivity.place_en;
+    document.getElementById('info-activity').textContent = currentLanguage === 'es' ? currentActivity.activity_es : currentActivity.activity_en;
+    document.getElementById('info-facilitator').textContent = currentLanguage === 'es' ? currentActivity.facilitator_es : currentActivity.facilitator_en;
+    
+    // Actualizar miniaturas activas
+    document.querySelectorAll('.photo-thumb').forEach((thumb, i) => {
+        thumb.classList.toggle('active', i === index);
     });
-    
-    const activeThumb = document.querySelectorAll('.photo-thumb')[photoIndex];
-    if (activeThumb) {
-        activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
 }
 
-// Función para abrir imagen en pantalla completa
-function openFullscreenImage(src) {
-    window.open(src, '_blank');
-}
-
-// Helper para crear slugs
-function slugify(text) {
-    return text.toString().toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w\-]+/g, '')
-        .replace(/\-\-+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '');
-}
-
-// ===== CONFIGURACIÓN DE EVENTOS =====
-document.getElementById('prev-photo').addEventListener('click', () => {
-    let newIndex = currentPhotoIndex - 1;
-    if (newIndex < 0) newIndex = currentPhotos.length - 1;
-    showPhotoViewer(newIndex);
-});
-
-document.getElementById('next-photo').addEventListener('click', () => {
+// Navegación de fotos
+function nextPhoto() {
     let newIndex = currentPhotoIndex + 1;
     if (newIndex >= currentPhotos.length) newIndex = 0;
-    showPhotoViewer(newIndex);
-});
-
-document.getElementById('toggle-metadata').addEventListener('click', function() {
-    const metadata = document.getElementById('photo-metadata');
-    const isVisible = metadata.style.display !== 'none';
-    metadata.style.display = isVisible ? 'none' : 'block';
-    this.textContent = isVisible ? translations[currentLanguage].showInfo : translations[currentLanguage].hideInfo;
-});
-
-document.getElementById('fullscreen-btn').addEventListener('click', function() {
-    if (currentPhotos.length > 0) {
-        openFullscreenImage(currentPhotos[currentPhotoIndex].fullscreen);
-    }
-});
-
-document.getElementById('large-photo').addEventListener('click', function() {
-    if (currentPhotos.length > 0) {
-        openFullscreenImage(currentPhotos[currentPhotoIndex].fullscreen);
-    }
-});
-
-document.querySelector('.close-modal').addEventListener('click', () => {
-    document.getElementById('photo-modal').style.display = 'none';
-});
-
-window.addEventListener('click', (event) => {
-    const modal = document.getElementById('photo-modal');
-    if (event.target === modal) {
-        modal.style.display = 'none';
-    }
-});
-
-// ===== INICIALIZACIÓN =====
-function initApp() {
-    loadFotosData();
+    showPhoto(newIndex);
 }
 
+function prevPhoto() {
+    let newIndex = currentPhotoIndex - 1;
+    if (newIndex < 0) newIndex = currentPhotos.length - 1;
+    showPhoto(newIndex);
+}
+
+// Abrir imagen en pantalla completa
+function openFullscreen() {
+    if (currentPhotos.length > 0) {
+        const imageUrl = currentPhotos[currentPhotoIndex].path;
+        window.open(imageUrl, '_blank');
+    }
+}
+
+// Cambiar idioma
+function setLanguage(lang) {
+    currentLanguage = lang;
+    
+    // Actualizar botones de idioma
+    document.getElementById('lang-es').classList.toggle('active', lang === 'es');
+    document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+    
+    // Actualizar interfaz
+    updateUI();
+    
+    // Recrear marcadores con nuevos textos
+    createMarkers();
+}
+
+// Actualizar textos de la interfaz
+function updateUI() {
+    document.getElementById('subtitle').textContent = translations[currentLanguage].subtitle;
+    document.getElementById('days-title').textContent = translations[currentLanguage].daysTitle;
+    document.getElementById('activities-title').textContent = translations[currentLanguage].activitiesTitle;
+    document.getElementById('legend-title').textContent = translations[currentLanguage].legendTitle;
+    document.getElementById('toggle-info').textContent = translations[currentLanguage].showInfo;
+    document.getElementById('fullscreen-btn').textContent = translations[currentLanguage].viewFullscreen;
+    document.getElementById('prev-photo').textContent = translations[currentLanguage].previous;
+    document.getElementById('next-photo').textContent = translations[currentLanguage].next;
+    
+    // Actualizar labels de información
+    document.querySelectorAll('.info-label').forEach((label, index) => {
+        const labels = [
+            translations[currentLanguage].date,
+            translations[currentLanguage].place,
+            translations[currentLanguage].activity,
+            translations[currentLanguage].facilitator
+        ];
+        if (labels[index]) label.textContent = labels[index];
+    });
+}
+
+// Generar filtros
+function generateFilters() {
+    generateDayFilters();
+    generateActivityFilters();
+}
+
+// Generar filtros por día
+function generateDayFilters() {
+    const dayFilters = document.getElementById('day-filters');
+    const uniqueDays = [...new Set(activitiesData.map(activity => activity.day))].sort();
+    
+    dayFilters.innerHTML = '';
+    uniqueDays.forEach(day => {
+        const div = document.createElement('div');
+        div.className = 'filter-option';
+        div.innerHTML = `
+            <input type="radio" id="day-${day}" name="day" value="${day}" ${day === 1 ? 'checked' : ''}>
+            <label for="day-${day}">Día ${day}</label>
+        `;
+        dayFilters.appendChild(div);
+    });
+    
+    // Event listener para filtros de día
+    document.querySelectorAll('input[name="day"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const selectedDay = parseInt(this.value);
+            updateActivityFilters(selectedDay);
+        });
+    });
+}
+
+// Actualizar filtros de actividad según día seleccionado
+function updateActivityFilters(day) {
+    const activityFilters = document.getElementById('activity-filters');
+    const activities = getActivitiesByDay(day);
+    
+    activityFilters.innerHTML = '';
+    activities.forEach(activity => {
+        const div = document.createElement('div');
+        div.className = 'filter-option';
+        div.innerHTML = `
+            <input type="radio" id="activity-${activity.cod}" name="activity" value="${activity.cod}">
+            <label for="activity-${activity.cod}">${currentLanguage === 'es' ? activity.activity_es : activity.activity_en}</label>
+        `;
+        activityFilters.appendChild(div);
+    });
+    
+    // Event listener para filtros de actividad
+    document.querySelectorAll('input[name="activity"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const activityCod = this.value;
+            const activity = getActivityByCod(activityCod);
+            if (activity && activity.lat && activity.lng) {
+                map.setView([activity.lat, activity.lng], 15);
+            }
+        });
+    });
+}
+
+// Inicializar aplicación
+function initApp() {
+    initMap();
+    generateFilters();
+    updateActivityFilters(1);
+    updateUI();
+    
+    // Event listeners
+    document.getElementById('lang-es').addEventListener('click', () => setLanguage('es'));
+    document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+    document.getElementById('prev-photo').addEventListener('click', prevPhoto);
+    document.getElementById('next-photo').addEventListener('click', nextPhoto);
+    document.getElementById('fullscreen-btn').addEventListener('click', openFullscreen);
+    document.getElementById('main-photo').addEventListener('click', openFullscreen);
+    document.querySelector('.close-modal').addEventListener('click', () => {
+        document.getElementById('photo-modal').style.display = 'none';
+    });
+    
+    // Toggle info
+    document.getElementById('toggle-info').addEventListener('click', function() {
+        const info = document.getElementById('photo-info');
+        const isVisible = info.style.display !== 'none';
+        info.style.display = isVisible ? 'none' : 'block';
+        this.textContent = isVisible ? translations[currentLanguage].showInfo : translations[currentLanguage].hideInfo;
+    });
+}
+
+// Iniciar cuando el DOM esté cargado
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
 } else {
