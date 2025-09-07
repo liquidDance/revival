@@ -68,25 +68,6 @@ function initMap() {
     }).setView([38.87732, 1.37058], 11); // Centrado en el aeropuerto
     
     createMarkers();
-    
-    // Mostrar popup de bienvenida en el aeropuerto después de un breve retraso
-    setTimeout(showWelcomePopup, 1000);
-}
-
-// Mostrar popup de bienvenida en el aeropuerto
-function showWelcomePopup() {
-    const airportActivity = getActivityByCod("0000");
-    if (airportActivity) {
-        showActivityPhotos("0000");
-        
-        // También abrir el popup en el mapa
-        markers.forEach(marker => {
-            const activity = marker.activity;
-            if (activity && activity.cod === "0000") {
-                marker.openPopup();
-            }
-        });
-    }
 }
 
 // Crear marcadores en el mapa
@@ -226,6 +207,12 @@ function showActivityPhotos(activityCod) {
     // Actualizar título del modal
     const activityName = currentLanguage === 'es' ? currentActivity.activity_es : currentActivity.activity_en;
     document.getElementById('modal-title').textContent = activityName;
+    
+    // Limpiar selector de actividades si existe
+    const existingSelector = document.querySelector('.activity-selector');
+    if (existingSelector) {
+        existingSelector.remove();
+    }
     
     // Renderizar miniaturas
     renderPhotoGrid();
@@ -398,7 +385,10 @@ function setLanguage(lang) {
     createMarkers();
     
     // Actualizar filtros
-    updateActivityFilters(document.querySelector('input[name="day"]:checked').value);
+    const selectedDay = document.querySelector('input[name="day"]:checked');
+    if (selectedDay) {
+        updateActivityFilters(parseInt(selectedDay.value));
+    }
 }
 
 // Actualizar textos de la interfaz
@@ -407,7 +397,14 @@ function updateUI() {
     document.getElementById('days-title').textContent = translations[currentLanguage].daysTitle;
     document.getElementById('activities-title').textContent = translations[currentLanguage].activitiesTitle;
     document.getElementById('legend-title').textContent = translations[currentLanguage].legendTitle;
-    document.getElementById('toggle-info').textContent = translations[currentLanguage].showInfo;
+    
+    // Actualizar botones
+    const infoBtn = document.getElementById('toggle-info');
+    if (infoBtn) {
+        const infoVisible = document.getElementById('photo-info').style.display !== 'none';
+        infoBtn.textContent = infoVisible ? translations[currentLanguage].hideInfo : translations[currentLanguage].showInfo;
+    }
+    
     document.getElementById('fullscreen-btn').textContent = translations[currentLanguage].viewFullscreen;
     document.getElementById('prev-photo').textContent = translations[currentLanguage].previous;
     document.getElementById('next-photo').textContent = translations[currentLanguage].next;
@@ -490,6 +487,21 @@ function updateActivityFilters(day) {
     });
 }
 
+// Cerrar modal
+function closeModal() {
+    document.getElementById('photo-modal').style.display = 'none';
+}
+
+// Toggle información de la foto
+function toggleInfo() {
+    const info = document.getElementById('photo-info');
+    const toggleBtn = document.getElementById('toggle-info');
+    const isVisible = info.style.display !== 'none';
+    
+    info.style.display = isVisible ? 'none' : 'block';
+    toggleBtn.textContent = isVisible ? translations[currentLanguage].showInfo : translations[currentLanguage].hideInfo;
+}
+
 // Inicializar aplicación
 function initApp() {
     initMap();
@@ -497,22 +509,18 @@ function initApp() {
     updateActivityFilters(1);
     updateUI();
     
-    // Event listeners
+    // Event listeners para botones de idioma
     document.getElementById('lang-es').addEventListener('click', () => setLanguage('es'));
     document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+    
+    // Event listeners para navegación de fotos
     document.getElementById('prev-photo').addEventListener('click', prevPhoto);
     document.getElementById('next-photo').addEventListener('click', nextPhoto);
-    document.getElementById('fullscreen-btn').addEventListener('click', openFullscreen);
-    document.getElementById('main-photo').addEventListener('click', openFullscreen);
-    document.querySelector('.close-modal').addEventListener('click', closeModal);
     
-    // Toggle info
-    document.getElementById('toggle-info').addEventListener('click', function() {
-        const info = document.getElementById('photo-info');
-        const isVisible = info.style.display !== 'none';
-        info.style.display = isVisible ? 'none' : 'block';
-        this.textContent = isVisible ? translations[currentLanguage].showInfo : translations[currentLanguage].hideInfo;
-    });
+    // Event listeners para botones del modal
+    document.getElementById('fullscreen-btn').addEventListener('click', openFullscreen);
+    document.getElementById('toggle-info').addEventListener('click', toggleInfo);
+    document.querySelector('.close-modal').addEventListener('click', closeModal);
     
     // Navegación con teclado
     document.addEventListener('keydown', function(e) {
@@ -527,11 +535,13 @@ function initApp() {
             }
         }
     });
-}
-
-// Cerrar modal
-function closeModal() {
-    document.getElementById('photo-modal').style.display = 'none';
+    
+    // Cerrar modal al hacer clic fuera del contenido
+    document.getElementById('photo-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
 }
 
 // Iniciar cuando el DOM esté cargado

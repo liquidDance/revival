@@ -17,6 +17,7 @@ body {
     line-height: 1.6;
     color: var(--color-dark);
     background-color: var(--color-light);
+    overflow: hidden;
 }
 
 .container {
@@ -177,6 +178,7 @@ header {
     justify-content: center;
     align-items: center;
     padding: 20px;
+    overflow-y: auto;
 }
 
 .modal-content {
@@ -185,7 +187,7 @@ header {
     border-radius: 8px;
     width: 95%;
     max-width: 1200px;
-    height: 90%;
+    max-height: 90vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -200,6 +202,18 @@ header {
     cursor: pointer;
     color: var(--color-dark);
     z-index: 2001;
+    background: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.close-modal:hover {
+    background: #f0f0f0;
 }
 
 .location-title {
@@ -214,12 +228,14 @@ header {
     flex: 1;
     gap: 20px;
     overflow: hidden;
+    max-height: calc(90vh - 100px);
 }
 
 .thumbnails-container {
-    height: 120px;
+    height: 100px;
     overflow-x: auto;
     padding: 10px 0;
+    flex-shrink: 0;
 }
 
 .photos-grid {
@@ -253,6 +269,7 @@ header {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
 }
 
 .viewer-header {
@@ -261,6 +278,7 @@ header {
     align-items: center;
     margin-bottom: 15px;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .viewer-header button {
@@ -271,6 +289,11 @@ header {
     border-radius: 4px;
     cursor: pointer;
     font-family: 'Montserrat', sans-serif;
+    transition: background-color 0.2s;
+}
+
+.viewer-header button:hover {
+    background: var(--color-dark);
 }
 
 #main-photo {
@@ -287,6 +310,8 @@ header {
     padding: 15px;
     border-radius: 4px;
     margin-bottom: 15px;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .info-row {
@@ -315,32 +340,11 @@ header {
     cursor: pointer;
     font-family: 'Montserrat', sans-serif;
     font-weight: 500;
+    transition: background-color 0.2s;
 }
 
 .nav-btn:hover {
     background-color: var(--color-primary);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .main-content {
-        flex-direction: column;
-    }
-    
-    .filters-panel {
-        width: 100%;
-        max-height: 200px;
-    }
-    
-    header {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .viewer-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
 }
 
 /* Estilos para el mapa CartoDB Positron */
@@ -382,37 +386,6 @@ header {
 }
 
 /* Mejoras para el modal de fotos */
-.modal-content {
-    max-width: 95%;
-}
-
-.photos-container {
-    display: flex;
-    flex-direction: column;
-    height: calc(100% - 60px);
-}
-
-.thumbnails-container {
-    height: 100px;
-    overflow-x: auto;
-    padding: 10px 0;
-    flex-shrink: 0;
-}
-
-.photo-viewer {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-}
-
-#main-photo {
-    max-height: 60vh;
-    object-fit: contain;
-}
-
-/* Botones de navegación en el visor de fotos */
 .viewer-nav {
     position: absolute;
     top: 50%;
@@ -458,14 +431,34 @@ header {
     justify-content: center;
     cursor: pointer;
     font-size: 0.8rem;
+    transition: background-color 0.2s;
 }
 
-.like-btn.liked {
+.like-btn:hover, .like-btn.liked {
     background: rgba(255, 0, 0, 0.2);
 }
 
 /* Mejoras responsive */
 @media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .filters-panel {
+        width: 100%;
+        max-height: 200px;
+    }
+    
+    header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .viewer-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
     .viewer-nav-btn {
         margin: 0 10px;
         width: 30px;
@@ -476,5 +469,14 @@ header {
     .activity-selector {
         margin: 5px 0;
         padding: 5px;
+    }
+    
+    .modal-content {
+        padding: 15px;
+        max-height: 85vh;
+    }
+    
+    .photos-container {
+        max-height: calc(85vh - 80px);
     }
 }
