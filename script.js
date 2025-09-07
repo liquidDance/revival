@@ -14,7 +14,8 @@ const translations = {
         place: "Lugar:",
         activity: "Actividad:",
         facilitator: "Facilitador:",
-        noPhotos: "No hay fotos para esta actividad"
+        noPhotos: "No hay fotos para esta actividad",
+        welcome: "Bienvenido al Liquid Dance Revival 2025"
     },
     en: {
         subtitle: "Water Dance Festival - Ibiza 2025",
@@ -30,7 +31,8 @@ const translations = {
         place: "Place:",
         activity: "Activity:",
         facilitator: "Facilitator:",
-        noPhotos: "No photos for this activity"
+        noPhotos: "No photos for this activity",
+        welcome: "Welcome to Liquid Dance Revival 2025"
     }
 };
 
@@ -41,16 +43,50 @@ let currentPhotos = [];
 let currentPhotoIndex = 0;
 let map;
 let markers = [];
+let markerGroups = {}; // Para agrupar marcadores en la misma ubicación
+
+// Colores para cada día
+const dayColors = {
+    1: '#ffa0da',
+    2: '#e7b0e9', 
+    3: '#cbbcf3',
+    4: '#bcd7f4',
+    5: '#cae8e8'
+};
 
 // Inicialización del mapa
 function initMap() {
-    map = L.map('map').setView([38.87222, 1.37306], 11);
+    // Usar el mapa CartoDB Positron como solicitado
+    var CartoDB_Positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    });
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    map = L.map('map', {
+        layers: [CartoDB_Positron]
+    }).setView([38.87732, 1.37058], 11); // Centrado en el aeropuerto
     
     createMarkers();
+    
+    // Mostrar popup de bienvenida en el aeropuerto después de un breve retraso
+    setTimeout(showWelcomePopup, 1000);
+}
+
+// Mostrar popup de bienvenida en el aeropuerto
+function showWelcomePopup() {
+    const airportActivity = getActivityByCod("0000");
+    if (airportActivity) {
+        showActivityPhotos("0000");
+        
+        // También abrir el popup en el mapa
+        markers.forEach(marker => {
+            const activity = marker.activity;
+            if (activity && activity.cod === "0000") {
+                marker.openPopup();
+            }
+        });
+    }
 }
 
 // Crear marcadores en el mapa
@@ -58,23 +94,30 @@ function createMarkers() {
     // Limpiar marcadores existentes
     markers.forEach(marker => map.removeLayer(marker));
     markers = [];
-    
-    // Colores para diferentes tipos de actividades
-    const colors = {
-        airport: '#e74c3c',
-        normal: '#3498db',
-        withFacilitator: '#2ecc71'
-    };
+    markerGroups = {};
     
     activitiesData.forEach(activity => {
         if (activity.lat && activity.lng) {
-            // Determinar color según tipo de actividad
-            let color = colors.normal;
-            if (activity.cod === "0000") color = colors.airport;
-            else if (activity.hasFacilitator) color = colors.withFacilitator;
+            // Determinar color según el día
+            let color = dayColors[activity.day] || '#3498db';
+            
+            // Para el aeropuerto usar color especial
+            if (activity.cod === "0000") color = '#e74c3c';
+            
+            // Para agrupar marcadores en la misma ubicación
+            const locationKey = `${activity.lat.toFixed(5)}_${activity.lng.toFixed(5)}`;
+            
+            if (!markerGroups[locationKey]) {
+                markerGroups[locationKey] = [];
+            }
+            
+            // Añadir pequeño desplazamiento para marcadores en la misma ubicación
+            const offset = markerGroups[locationKey].length * 0.0005;
+            const lat = activity.lat + offset;
+            const lng = activity.lng + offset;
             
             // Crear marcadores personalizados
-            const marker = L.marker([activity.lat, activity.lng], {
+            const marker = L.marker([lat, lng], {
                 icon: L.divIcon({
                     className: 'custom-marker',
                     html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
@@ -82,6 +125,9 @@ function createMarkers() {
                     iconAnchor: [10, 10]
                 })
             });
+            
+            // Guardar referencia a la actividad en el marcador
+            marker.activity = activity;
             
             // Contenido del popup
             const activityName = currentLanguage === 'es' ? activity.activity_es : activity.activity_en;
@@ -94,11 +140,15 @@ function createMarkers() {
                 popupContent += `<br>${currentLanguage === 'es' ? 'Facilitador: ' : 'Facilitator: '}${facilitator}`;
             }
             
-            popupContent += `<br><button onclick="showActivityPhotos('${activity.cod}')">${currentLanguage === 'es' ? 'Ver fotos' : 'View photos'}</button>`;
+            popupContent += `<br><button onclick="showActivityPhotos('${activity.cod}')" class="popup-btn">${currentLanguage === 'es' ? 'Ver fotos' : 'View photos'}</button>`;
             
             marker.bindPopup(popupContent);
             marker.addTo(map);
             markers.push(marker);
+            markerGroups[locationKey].push(marker);
+            
+            // Establecer opacidad inicial según el día seleccionado
+            updateMarkerVisibility();
         }
     });
     
@@ -106,26 +156,48 @@ function createMarkers() {
     updateLegend();
 }
 
+// Actualizar visibilidad de marcadores según día seleccionado
+function updateMarkerVisibility() {
+    const selectedDay = document.querySelector('input[name="day"]:checked');
+    const day = selectedDay ? parseInt(selectedDay.value) : 1;
+    
+    markers.forEach(marker => {
+        if (marker.activity) {
+            if (marker.activity.day === day || marker.activity.cod === "0000") {
+                marker.setOpacity(1);
+                marker.setZIndexOffset(1000);
+            } else {
+                marker.setOpacity(0.5);
+                marker.setZIndexOffset(0);
+            }
+        }
+    });
+}
+
 // Actualizar leyenda
 function updateLegend() {
     const legendItems = document.getElementById('legend-items');
     legendItems.innerHTML = '';
     
-    const items = [
-        { color: '#e74c3c', label: currentLanguage === 'es' ? 'Aeropuerto' : 'Airport' },
-        { color: '#3498db', label: currentLanguage === 'es' ? 'Actividad' : 'Activity' },
-        { color: '#2ecc71', label: currentLanguage === 'es' ? 'Con facilitador' : 'With facilitator' }
-    ];
+    // Aeropuerto
+    const airportDiv = document.createElement('div');
+    airportDiv.className = 'legend-item';
+    airportDiv.innerHTML = `
+        <div class="legend-color" style="background-color: #e74c3c;"></div>
+        <span>${currentLanguage === 'es' ? 'Aeropuerto' : 'Airport'}</span>
+    `;
+    legendItems.appendChild(airportDiv);
     
-    items.forEach(item => {
+    // Días
+    for (let day = 1; day <= 5; day++) {
         const div = document.createElement('div');
         div.className = 'legend-item';
         div.innerHTML = `
-            <div class="legend-color" style="background-color: ${item.color};"></div>
-            <span>${item.label}</span>
+            <div class="legend-color" style="background-color: ${dayColors[day]};"></div>
+            <span>${currentLanguage === 'es' ? 'Día' : 'Day'} ${day}</span>
         `;
         legendItems.appendChild(div);
-    });
+    }
 }
 
 // Obtener fotos de una actividad desde el manifest
@@ -169,6 +241,42 @@ function showActivityPhotos(activityCod) {
     
     // Mostrar modal
     document.getElementById('photo-modal').style.display = 'flex';
+    
+    // Si hay múltiples actividades en la misma ubicación, mostrar selector
+    showActivitySelectorIfNeeded();
+}
+
+// Mostrar selector de actividades si hay múltiples en la misma ubicación
+function showActivitySelectorIfNeeded() {
+    const locationKey = `${currentActivity.lat.toFixed(5)}_${currentActivity.lng.toFixed(5)}`;
+    const activitiesInLocation = markerGroups[locationKey];
+    
+    if (activitiesInLocation && activitiesInLocation.length > 1) {
+        const selectorContainer = document.createElement('div');
+        selectorContainer.className = 'activity-selector';
+        selectorContainer.innerHTML = `<h3>${currentLanguage === 'es' ? 'Actividades en esta ubicación:' : 'Activities at this location:'}</h3>`;
+        
+        const selector = document.createElement('select');
+        selector.id = 'location-activities-selector';
+        selector.onchange = function() {
+            showActivityPhotos(this.value);
+        };
+        
+        activitiesInLocation.forEach(marker => {
+            const activity = marker.activity;
+            const option = document.createElement('option');
+            option.value = activity.cod;
+            option.textContent = currentLanguage === 'es' ? activity.activity_es : activity.activity_en;
+            option.selected = activity.cod === currentActivity.cod;
+            selector.appendChild(option);
+        });
+        
+        selectorContainer.appendChild(selector);
+        
+        // Insertar después del título
+        const modalTitle = document.getElementById('modal-title');
+        modalTitle.parentNode.insertBefore(selectorContainer, modalTitle.nextSibling);
+    }
 }
 
 // Renderizar grid de miniaturas
@@ -177,14 +285,38 @@ function renderPhotoGrid() {
     photosGrid.innerHTML = '';
     
     currentPhotos.forEach((photoInfo, index) => {
+        const thumbContainer = document.createElement('div');
+        thumbContainer.className = 'thumb-container';
+        
         const thumb = document.createElement('img');
         thumb.src = photoInfo.path;
         thumb.alt = `Foto ${photoInfo.sequential}`;
         thumb.className = 'photo-thumb';
         if (index === currentPhotoIndex) thumb.classList.add('active');
         thumb.onclick = () => showPhoto(index);
-        photosGrid.appendChild(thumb);
+        
+        // Botón de like
+        const likeBtn = document.createElement('div');
+        likeBtn.className = 'like-btn';
+        likeBtn.innerHTML = '❤️';
+        likeBtn.onclick = (e) => {
+            e.stopPropagation();
+            toggleLike(photoInfo.path);
+            likeBtn.classList.toggle('liked');
+        };
+        
+        thumbContainer.appendChild(thumb);
+        thumbContainer.appendChild(likeBtn);
+        photosGrid.appendChild(thumbContainer);
     });
+}
+
+// Alternar like en una foto
+function toggleLike(photoPath) {
+    // Implementar lógica de likes (podría usar localStorage)
+    let likedPhotos = JSON.parse(localStorage.getItem('likedPhotos') || '{}');
+    likedPhotos[photoPath] = !likedPhotos[photoPath];
+    localStorage.setItem('likedPhotos', JSON.stringify(likedPhotos));
 }
 
 // Mostrar foto específica
@@ -209,6 +341,24 @@ function showPhoto(index) {
     // Actualizar miniaturas activas
     document.querySelectorAll('.photo-thumb').forEach((thumb, i) => {
         thumb.classList.toggle('active', i === index);
+    });
+    
+    // Actualizar botones de like
+    updateLikeButtons();
+}
+
+// Actualizar botones de like
+function updateLikeButtons() {
+    const likedPhotos = JSON.parse(localStorage.getItem('likedPhotos') || '{}');
+    document.querySelectorAll('.thumb-container').forEach((container, i) => {
+        const likeBtn = container.querySelector('.like-btn');
+        const photoInfo = currentPhotos[i];
+        
+        if (likedPhotos[photoInfo.path]) {
+            likeBtn.classList.add('liked');
+        } else {
+            likeBtn.classList.remove('liked');
+        }
     });
 }
 
@@ -246,6 +396,9 @@ function setLanguage(lang) {
     
     // Recrear marcadores con nuevos textos
     createMarkers();
+    
+    // Actualizar filtros
+    updateActivityFilters(document.querySelector('input[name="day"]:checked').value);
 }
 
 // Actualizar textos de la interfaz
@@ -288,7 +441,7 @@ function generateDayFilters() {
         div.className = 'filter-option';
         div.innerHTML = `
             <input type="radio" id="day-${day}" name="day" value="${day}" ${day === 1 ? 'checked' : ''}>
-            <label for="day-${day}">Día ${day}</label>
+            <label for="day-${day}">${currentLanguage === 'es' ? 'Día' : 'Day'} ${day}</label>
         `;
         dayFilters.appendChild(div);
     });
@@ -298,6 +451,7 @@ function generateDayFilters() {
         input.addEventListener('change', function() {
             const selectedDay = parseInt(this.value);
             updateActivityFilters(selectedDay);
+            updateMarkerVisibility();
         });
     });
 }
@@ -316,15 +470,21 @@ function updateActivityFilters(day) {
             <label for="activity-${activity.cod}">${currentLanguage === 'es' ? activity.activity_es : activity.activity_en}</label>
         `;
         activityFilters.appendChild(div);
-    });
-    
-    // Event listener para filtros de actividad
-    document.querySelectorAll('input[name="activity"]').forEach(input => {
+        
+        // Event listener para este filtro específico
+        const input = div.querySelector('input');
         input.addEventListener('change', function() {
             const activityCod = this.value;
             const activity = getActivityByCod(activityCod);
             if (activity && activity.lat && activity.lng) {
                 map.setView([activity.lat, activity.lng], 15);
+                
+                // Abrir el popup del marcador
+                markers.forEach(marker => {
+                    if (marker.activity && marker.activity.cod === activityCod) {
+                        marker.openPopup();
+                    }
+                });
             }
         });
     });
@@ -344,9 +504,7 @@ function initApp() {
     document.getElementById('next-photo').addEventListener('click', nextPhoto);
     document.getElementById('fullscreen-btn').addEventListener('click', openFullscreen);
     document.getElementById('main-photo').addEventListener('click', openFullscreen);
-    document.querySelector('.close-modal').addEventListener('click', () => {
-        document.getElementById('photo-modal').style.display = 'none';
-    });
+    document.querySelector('.close-modal').addEventListener('click', closeModal);
     
     // Toggle info
     document.getElementById('toggle-info').addEventListener('click', function() {
@@ -355,6 +513,25 @@ function initApp() {
         info.style.display = isVisible ? 'none' : 'block';
         this.textContent = isVisible ? translations[currentLanguage].showInfo : translations[currentLanguage].hideInfo;
     });
+    
+    // Navegación con teclado
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('photo-modal');
+        if (modal.style.display === 'flex') {
+            if (e.key === 'ArrowLeft') {
+                prevPhoto();
+            } else if (e.key === 'ArrowRight') {
+                nextPhoto();
+            } else if (e.key === 'Escape') {
+                closeModal();
+            }
+        }
+    });
+}
+
+// Cerrar modal
+function closeModal() {
+    document.getElementById('photo-modal').style.display = 'none';
 }
 
 // Iniciar cuando el DOM esté cargado

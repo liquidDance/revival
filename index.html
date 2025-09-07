@@ -75,6 +75,11 @@
                         <button id="fullscreen-btn">Ver pantalla completa</button>
                     </div>
                     <img id="main-photo" src="" alt="Foto del evento">
+					<!-- Dentro del div con class="photo-viewer", después de la imagen principal -->
+					<div class="viewer-nav">
+    					<button class="viewer-nav-btn" onclick="prevPhoto()">❮</button>
+    					<button class="viewer-nav-btn" onclick="nextPhoto()">❯</button>
+					</div>
                     <div class="photo-info" id="photo-info">
                         <div class="info-row">
                             <span class="info-label">Fecha:</span>
