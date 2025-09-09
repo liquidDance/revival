@@ -1,49 +1,37 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liquid Dance Media</title>
-    <link rel="stylesheet" href="css/styles.css">
-
-    <!-- Leaflet CSS desde CDN -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-
-    <!-- MarkerCluster CSS desde CDN -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liquid Dance Revival - Festival de Danza en el Agua</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
 </head>
 <body>
-    <header>
-        <h1>Liquid Dance Media</h1>
-        <div id="filters">
-            <select id="filter-day"><option value="">Todos los días</option></select>
-            <select id="filter-place"><option value="">Todos los lugares</option></select>
-            <select id="filter-activity"><option value="">Todas las actividades</option></select>
-        </div>
-    </header>
 
-    <main>
-        <div id="map"></div>
-        <div id="gallery"></div>
-    </main>
+<h1>Liquid Dance Revival</h1>
 
-    <!-- Modal -->
-    <div id="photo-modal" class="hidden">
-        <button id="close-modal">×</button>
-        <button id="prev-photo">‹</button>
-        <button id="next-photo">›</button>
-        <div id="modal-content"></div>
-    </div>
+<!-- Filtros -->
+<div id="filtros">
+  <select id="filtro-dia">
+    <option value="">Todos los días</option>
+  </select>
+  <input type="text" id="filtro-facilitador" placeholder="Filtrar por facilitador"/>
+  <input type="text" id="filtro-lugar" placeholder="Filtrar por lugar"/>
+</div>
 
-    <!-- Leaflet JS desde CDN -->
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<!-- Contenedor de miniaturas -->
+<div id="galeria"></div>
 
-    <!-- MarkerCluster JS desde CDN -->
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+<!-- Mapa -->
+<div id="map"></div>
 
-    <!-- Manifest de fotos y código principal -->
-    <script src="data/photo-manifest.js"></script>
-    <script src="js/main.js"></script>
+<script src="js/leaflet.js"></script>
+<script src="js/leaflet.markercluster.js"></script>
+<script src="data/photo-manifest.js"></script>
+<script src="js/main.js"></script>
+
 </body>
 </html>
