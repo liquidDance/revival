@@ -1,37 +1,118 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Liquid Dance Revival - Festival de Danza en el Agua</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-<link rel="stylesheet" href="css/styles.css"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquid Dance Revival - Festival de Danza en el Agua</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<h1>Liquid Dance Revival</h1>
-
-<!-- Filtros -->
-<div id="filtros">
-  <select id="filtro-dia">
-    <option value="">Todos los días</option>
-  </select>
-  <input type="text" id="filtro-facilitador" placeholder="Filtrar por facilitador"/>
-  <input type="text" id="filtro-lugar" placeholder="Filtrar por lugar"/>
+    <div class="container">
+        <header>
+            <div>
+                <div class="logo">Liquid Dance <span>Revival</span></div>
+                <div class="subtitle" id="subtitle">Festival de Danza en el Agua - Ibiza 2025</div>
+            </div>
+            <div class="language-selector">
+                <button class="lang-btn active" id="lang-es">ES</button>
+                <button class="lang-btn" id="lang-en">EN</button>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="filters-panel">
+                <div class="filter-section">
+                    <h3>
+                        <span id="days-title">Días del Festival</span>
+                    </h3>
+                    <div class="filter-options" id="day-filters">
+                        <!-- Generado por JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3>
+                        <span id="activities-title">Actividades</span>
+                    </h3>
+                    <div class="filter-options" id="activity-filters">
+                        <!-- Generado por JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <div class="legend">
+                    <h4 id="legend-title">Leyenda</h4>
+                    <div id="legend-items">
+                        <!-- Generado por JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para fotos -->
+	
+<div class="modal" id="photo-modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2 class="location-title" id="modal-title"></h2>
+        
+        <div class="photos-container">
+            <div class="thumbnails-container">
+                <div class="photos-grid" id="photos-grid">
+                    <!-- Miniaturas generadas por JavaScript -->
+                </div>
+            </div>
+            
+            <div class="photo-viewer" id="photo-viewer">
+                <div class="viewer-header">
+                    <span id="photo-counter"></span>
+                    <button id="toggle-info">Mostrar información</button>
+                    <button id="fullscreen-btn">Ver pantalla completa</button>
+                </div>
+                <img id="main-photo" src="" alt="Foto del evento">
+                
+                <!-- Botones de navegación -->
+                <div class="viewer-nav">
+                    <button class="viewer-nav-btn" onclick="prevPhoto()">❮</button>
+                    <button class="viewer-nav-btn" onclick="nextPhoto()">❯</button>
+                </div>
+                
+                <div class="photo-info" id="photo-info">
+                    <div class="info-row">
+                        <span class="info-label">Fecha:</span>
+                        <span id="info-date"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Lugar:</span>
+                        <span id="info-place"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Actividad:</span>
+                        <span id="info-activity"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Facilitador:</span>
+                        <span id="info-facilitator"></span>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="nav-btn" id="prev-photo">← Anterior</button>
+                    <button class="nav-btn" id="next-photo">Siguiente →</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Contenedor de miniaturas -->
-<div id="galeria"></div>
-
-<!-- Mapa -->
-<div id="map"></div>
-
-<script src="js/leaflet.js"></script>
-<script src="js/leaflet.markercluster.js"></script>
-<script src="data/photo-manifest.js"></script>
-<script src="js/main.js"></script>
-
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="data/activities.js"></script>
+    <script src="data/photo-manifest.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
