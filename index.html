@@ -140,7 +140,6 @@ header{background:var(--color-primary);color:white;padding:12px 18px;display:fle
             <button id="next-btn">❯</button>
           </div>
           <div id="media-wrapper" style="display:flex;justify-content:center;align-items:center;">
-            <!-- media inserted dynamically -->
             <img id="main-media" src="" alt="Media" style="display:none" />
           </div>
         </div>
@@ -161,33 +160,69 @@ header{background:var(--color-primary);color:white;padding:12px 18px;display:fle
   </div>
 </div>
 
-<!-- Scripts -->
+<!-- Dependencias -->
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
+<!-- Tu archivo de datos -->
+<script src="locations.js"></script>
+
 <script>
-let map, clusterGroup, markersGroup;
+// Inicializar mapa
+const map = L.map('map', {minZoom: 2}).setView([39.0, 1.5], 8);
 
-function initMap(){
-  map = L.map('map', {preferCanvas:false}).setView([39.0,1.45], 10);
+// Capa base Stamen Watercolor
+L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg', {
+  attribution: 'Map tiles by <a href="https://stamen.com/">Stamen Design</a>, <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
+  subdomains: 'abcd',
+  maxZoom: 16
+}).addTo(map);
 
-  // TILE LAYER Stamen Watercolor
-  L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg', {
-    attribution: 'Map tiles by <a href="http://stamen.com/">Stamen Design</a>, ' +
-                 '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    subdomains: 'abcd',
-    minZoom: 1,
-    maxZoom: 16
-  }).addTo(map);
+// Aquí comienza tu script original
+// Crear grupo de clusters
+const markers = L.markerClusterGroup();
+const dayFiltersContainer = document.getElementById('day-filters');
+const activityFiltersContainer = document.getElementById('activity-filters');
+const legendItemsContainer = document.getElementById('legend-items');
 
-  clusterGroup = L.markerClusterGroup();
-  map.addLayer(clusterGroup);
+let currentLanguage = 'es';
 
-  markersGroup = L.layerGroup().addTo(map);
+// Funciones de traducción
+function translatePage(lang){
+  currentLanguage = lang;
+  document.getElementById('btn-es').classList.toggle('active', lang==='es');
+  document.getElementById('btn-en').classList.toggle('active', lang==='en');
+  document.getElementById('btn-es').setAttribute('aria-pressed', lang==='es');
+  document.getElementById('btn-en').setAttribute('aria-pressed', lang==='en');
+
+  // Subtítulos
+  document.getElementById('subtitle').textContent = lang==='es' ? 'Festival de Danza en el Agua - Ibiza 2025' : 'Water Dance Festival - Ibiza 2025';
+  document.getElementById('days-title').textContent = lang==='es' ? 'Días del Festival' : 'Festival Days';
+  document.getElementById('activities-title').textContent = lang==='es' ? 'Actividades' : 'Activities';
+  document.getElementById('legend-title').textContent = lang==='es' ? 'Leyenda' : 'Legend';
+  document.getElementById('lbl-date').textContent = lang==='es' ? 'Fecha:' : 'Date:';
+  document.getElementById('lbl-place').textContent = lang==='es' ? 'Lugar:' : 'Place:';
+  document.getElementById('lbl-activity').textContent = lang==='es' ? 'Actividad:' : 'Activity:';
+  document.getElementById('lbl-facilitator').textContent = lang==='es' ? 'Facilitador:' : 'Facilitator:';
+  document.getElementById('toggle-info').textContent = lang==='es' ? 'Mostrar información' : 'Show info';
 }
 
-// Inicializar al cargar la página
-window.addEventListener('load', initMap);
+// Botones de idioma
+document.getElementById('btn-es').addEventListener('click', ()=>translatePage('es'));
+document.getElementById('btn-en').addEventListener('click', ()=>translatePage('en'));
+
+// Cargar markers
+locations.forEach(loc => {
+  const marker = L.marker([loc.lat, loc.lng]);
+  marker.bindPopup(`<strong>${loc['activity_'+currentLanguage]}</strong><br>${loc['place_'+currentLanguage]}<br>${loc.date}`);
+  marker.data = loc;
+  markers.addLayer(marker);
+});
+map.addLayer(markers);
+
+// TODO: Mantener el resto de tu script original de filtros, modal, clusters y navegación de fotos exactamente como estaba en tu proyecto
+
 </script>
 </body>
 </html>
+
