@@ -181,11 +181,6 @@ const photoManifest = {
     ],
     "0102": [
       {
-        "original": "0102-25-IMG_2392_iPSE3_edit.mp4",
-        "sequential": "001.mp4",
-        "type": "video"
-      },
-      {
         "original": "0102_01_IMG_9374@5D.jpg",
         "sequential": "002.jpg",
         "type": "image"
@@ -299,7 +294,12 @@ const photoManifest = {
         "original": "0102_24__MG_9428@5D.jpg",
         "sequential": "024.jpg",
         "type": "image"
-      }
+      },
+      {
+        "original": "0102_25-IMG_2392_iPSE3_edit.mp4",
+        "sequential": "001.mp4",
+        "type": "video"
+      },
     ],
     "0103": [
       {
@@ -1249,11 +1249,6 @@ const photoManifest = {
         "original": "0401-15-MVI_6917_s95.mp4",
         "sequential": "014.mp4",
         "type": "video"
-      },
-      {
-        "original": "0401-16-IMG_6889_s95.jpg",
-        "sequential": "015.jpg",
-        "type": "image"
       }
     ],
     "0402": [
@@ -1406,7 +1401,17 @@ const photoManifest = {
         "original": "0402-38-GH010478.mp4",
         "sequential": "030.mp4",
         "type": "video"
-      }
+      },
+	  {
+        "original": "0402-39-GH010478.mp4",
+        "sequential": "030.mp4",
+        "type": "video"
+      },
+	  {
+        "original": "0402-40-GH010478.mp4",
+        "sequential": "030.mp4",
+        "type": "video"
+      }	
     ],
     "0403": [
       {
