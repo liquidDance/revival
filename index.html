@@ -21,23 +21,73 @@
   --color-dark:#2c3e50;
 }
 *{box-sizing:border-box}
-body{font-family:'Montserrat',sans-serif;margin:0;height:100vh;color:var(--color-dark);background:var(--color-light);}
+html,body{height:100%}
+body{font-family:'Montserrat',sans-serif;margin:0;height:100vh;color:var(--color-dark);background:var(--color-light);overflow:hidden}
 .container{display:flex;flex-direction:column;height:100vh;}
-header{background:var(--color-primary);color:white;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;}
-.logo{font-weight:700;font-size:1.4rem}
+
+/* Header */
+header{
+  background:var(--color-primary);
+  color:white;
+  padding:10px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  position:relative;
+  z-index:1600; /* keep above map controls */
+}
+.logo{font-weight:700;font-size:1.45rem;line-height:1}
 .logo span{color:var(--color-accent)}
-.subtitle{font-weight:300;font-size:0.95rem}
-.language-selector{display:flex;gap:8px}
-.lang-btn{background:transparent;border:1px solid rgba(255,255,255,0.9);color:white;padding:6px 10px;border-radius:4px;cursor:pointer}
-.lang-btn.active{background:white;color:var(--color-primary)}
+.subtitle{font-weight:300;font-size:0.9rem;margin-top:4px;color:rgba(255,255,255,0.95)}
+.header-left{display:flex;flex-direction:column}
+
+/* smaller language buttons to avoid fighting with title */
+.language-selector{display:flex;gap:6px}
+.lang-btn{background:transparent;border:1px solid rgba(255,255,255,0.85);color:white;padding:4px 7px;border-radius:4px;cursor:pointer;font-size:0.85rem}
+.lang-btn.active{background:white;color:var(--color-primary);font-weight:600}
+
+/* Day tabs under header */
+.day-tabs{
+  display:flex;
+  gap:8px;
+  padding:10px 16px;
+  align-items:center;
+  background:transparent;
+  overflow:auto;
+  border-bottom:1px solid rgba(0,0,0,0.04);
+  -webkit-overflow-scrolling:touch;
+  z-index:1500;
+}
+.day-tab{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:10px;
+  background:transparent;
+  border:1px solid rgba(0,0,0,0.06);
+  cursor:pointer;
+  white-space:nowrap;
+  font-weight:600;
+  font-size:0.95rem;
+}
+.day-tab .dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid white;box-shadow:0 0 6px rgba(0,0,0,0.12)}
+.day-tab.active{background:var(--color-primary);color:white;border-color:transparent}
+.day-tab.active .dot{border-color:rgba(255,255,255,0.9)}
+
+/* Layout */
 .main-content{display:flex;flex:1;overflow:hidden}
-.filters-panel{width:320px;background:#fff;padding:16px;overflow:auto;box-shadow:2px 0 12px rgba(0,0,0,0.08)}
-.filter-section{margin-bottom:18px}
-.filter-section h3{margin:0 0 8px 0;color:var(--color-primary);font-size:1.05rem;border-bottom:1px solid #eee;padding-bottom:6px}
+.filters-panel{width:320px;background:#fff;padding:12px;overflow:auto;box-shadow:2px 0 12px rgba(0,0,0,0.08)}
+.filter-section{margin-bottom:14px}
+.filter-section h3{margin:0 0 8px 0;color:var(--color-primary);font-size:1.02rem;border-bottom:1px solid #eee;padding-bottom:6px}
 .filter-options{display:flex;flex-direction:column;gap:6px}
 .filter-option{display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;cursor:pointer}
 .filter-option:hover{background:#fafafa}
 .filter-option input{cursor:pointer}
+
+/* hide legacy day-radios area (we're using tabs) but keep element present for accessibility if needed */
+#day-filters{display:none}
+
 .map-container{flex:1;position:relative}
 #map{width:100%;height:100%}
 .legend{position:absolute;right:18px;bottom:18px;background:#fff;padding:10px;border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.12);z-index:1000;max-width:220px}
@@ -69,18 +119,29 @@ header{background:var(--color-primary);color:white;padding:12px 18px;display:fle
 .viewer-nav button{pointer-events:all;background:rgba(0,0,0,.55);color:#fff;border:none;width:42px;height:42px;border-radius:50%;font-size:20px;cursor:pointer}
 .photo-info{background:#f8f9fa;padding:12px;border-radius:8px;margin-top:8px;max-height:200px;overflow:auto;display:none}
 
-/* responsive tweaks */
+/* mobile: golden ratio proportion (segment short for map) */
 @media (max-width:900px){
-  .filters-panel{width:100%;max-height:220px;position:relative;z-index:999}
   .main-content{flex-direction:column}
-  #map{height:60vh}
+  .filters-panel{width:100%;max-height:62vh;display:block;z-index:1300}
+  /* golden ratio: map short segment ~38% of viewport */
+  #map{height:38vh}
+  /* day tabs become horizontally scrollable and slightly larger */
+  .day-tabs{padding:8px 12px}
+  .day-tab{padding:8px 10px;font-size:0.95rem}
 }
+
+/* ensure leaflet controls do not overlay header */
+.leaflet-top, .leaflet-bottom { z-index:1000 !important; }
+
+/* small improvements */
+.popup-btn{background-color:var(--color-primary); color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-family:'Montserrat',sans-serif; font-weight:600}
+.filter-option label {flex:1}
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <div>
+    <div class="header-left">
       <div class="logo">Liquid Dance <span>Revival</span></div>
       <div class="subtitle" id="subtitle">Festival de Danza en el Agua - Ibiza 2025</div>
     </div>
@@ -90,9 +151,15 @@ header{background:var(--color-primary);color:white;padding:12px 18px;display:fle
     </div>
   </header>
 
+  <!-- Day tabs (just under header) -->
+  <div class="day-tabs" id="day-tabs" aria-label="Seleccionar día">
+    <!-- populated by JS -->
+  </div>
+
   <div class="main-content">
     <aside class="filters-panel" aria-label="Filtros">
-      <div class="filter-section">
+      <!-- legacy day filters (hidden) kept for accessibility -->
+      <div class="filter-section" id="legacy-days" style="display:none;">
         <h3 id="days-title">Días del Festival</h3>
         <div class="filter-options" id="day-filters"></div>
       </div>
@@ -133,14 +200,12 @@ header{background:var(--color-primary);color:white;padding:12px 18px;display:fle
           </div>
         </div>
 
-        <!-- Aquí irá imagen/video/audio -->
         <div style="position:relative;">
           <div class="viewer-nav">
             <button id="prev-btn">❮</button>
             <button id="next-btn">❯</button>
           </div>
           <div id="media-wrapper" style="display:flex;justify-content:center;align-items:center;">
-            <!-- media inserted dynamically -->
             <img id="main-media" src="" alt="Media" style="display:none" />
           </div>
         </div>
@@ -165,26 +230,22 @@ header{background:var(--color-primary);color:white;padding:12px 18px;display:fle
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
-<!-- Tus datos externos (debe existir en /data/) -->
+<!-- Tus datos externos (deben existir en /data/) -->
 <script src="data/activities.js"></script>
 <script src="data/photo-manifest.js"></script>
 
 <script>
 /*
-  index.html dinámico
-  - Lee activitiesData (data/activities.js) y photoManifest (data/photo-manifest.js)
-  - Configurable MEDIA_FOLDER (por defecto "media")
-  - Usa Stadia.AlidadeSmooth tiles
-  - Traduce toda la UI (ES/EN)
-  - Maneja imágenes, video y audio (según photoManifest.type)
-  - Agrupa marcadores solapados con offset + markerCluster
+  Versión FUNCIONAL2 -> ajuste: pestañas de días justo bajo título + proporción áurea (segmento corto para el mapa en móvil)
+  Mantengo la estructura funcional anterior: activitiesData y photoManifest deben estar presentes.
 */
 
-const MEDIA_FOLDER = "media"; // <--- Cambia si tu carpeta se llama 'fotos' o algo distinto
+const MEDIA_FOLDER = "media"; // carpeta con media/diaX/cod/original
 
 // Traducciones
 const I18N = {
   es: {
+    title: "Liquid Dance Revival - Festival de Danza en el Agua",
     subtitle: "Festival de Danza en el Agua - Ibiza 2025",
     daysTitle: "Días del Festival",
     activitiesTitle: "Actividades",
@@ -202,6 +263,7 @@ const I18N = {
     noMedia: "No hay material para esta actividad"
   },
   en: {
+    title: "Liquid Dance Revival - Water Dance Festival",
     subtitle: "Water Dance Festival - Ibiza 2025",
     daysTitle: "Festival Days",
     activitiesTitle: "Activities",
@@ -220,7 +282,7 @@ const I18N = {
   }
 };
 
-// Colores por día (si quieres otros colores, cámbialos aquí)
+// colores por día
 const dayColors = {
   1: '#ffa0da',
   2: '#e7b0e9',
@@ -233,49 +295,35 @@ let currentLang = 'es';
 let currentDay = null;
 let currentActivity = null;
 let currentMediaIndex = 0;
-let map, markersGroup;
-let markerMap = {}; // key -> array of markers (para selector en modal)
-let clusterGroup;
+let map, clusterGroup;
+let markerMap = {}; // cod -> [marker...]
 
-// Inicializa UI y mapa después de que data esté disponible
 function initApp(){
-  // Validar que activitiesData esté presente
   if (typeof activitiesData === 'undefined') {
     console.error('No se ha cargado activitiesData (data/activities.js).');
     alert('Falta data/activities.js — revisa que el archivo exista en /data/');
     return;
   }
-  // photoManifest puede no existir: manejarlo
-  if (typeof photoManifest === 'undefined') {
-    console.warn('photoManifest no encontrado. No habrá medios asociados.');
-  }
 
-  // UI: traducciones iniciales (title/subtitle)
-  document.getElementById('subtitle').textContent = I18N[currentLang].subtitle;
+  // set language buttons
+  document.getElementById('btn-es').addEventListener('click', ()=>setLanguage('es'));
+  document.getElementById('btn-en').addEventListener('click', ()=>setLanguage('en'));
 
-  // Set language buttons
-  const btnEs = document.getElementById('btn-es');
-  const btnEn = document.getElementById('btn-en');
-  btnEs.addEventListener('click', ()=>setLanguage('es'));
-  btnEn.addEventListener('click', ()=>setLanguage('en'));
-
-  // Init map
+  // init map
   initMap();
 
-  // Build dynamic UI
-  buildDayFilters();
+  // build UI
+  buildDayTabs();
   buildLegend();
 
-  // Default: select first day available
+  // default: first available day
   const availableDays = [...new Set(activitiesData.map(a=>a.day))].sort((a,b)=>a-b);
   if (availableDays.length>0) {
     selectDay(availableDays[0]);
-    // check the corresponding radio
-    const r = document.getElementById(`day-${availableDays[0]}`);
-    if (r) r.checked = true;
+    setActiveTab(availableDays[0]);
   }
 
-  // Modal controls
+  // modal controls
   document.getElementById('close-modal').addEventListener('click', closeModal);
   document.getElementById('prev-photo').addEventListener('click', ()=>navigateMedia(-1));
   document.getElementById('next-photo').addEventListener('click', ()=>navigateMedia(1));
@@ -284,11 +332,11 @@ function initApp(){
   document.getElementById('toggle-info').addEventListener('click', toggleInfo);
   document.getElementById('fullscreen').addEventListener('click', openFullscreen);
 
-  // Close modal clicking outside
+  // close modal clicking outside
   const modal = document.getElementById('photo-modal');
   modal.addEventListener('click', (e)=>{ if (e.target===modal) closeModal(); });
 
-  // Keyboard navigation in modal
+  // keyboard in modal
   document.addEventListener('keydown', (e)=>{
     const modalVisible = document.getElementById('photo-modal').style.display === 'flex';
     if (!modalVisible) return;
@@ -296,70 +344,71 @@ function initApp(){
     if (e.key === 'ArrowRight') navigateMedia(1);
     if (e.key === 'Escape') closeModal();
   });
+
+  // responsive helper
+  adaptFiltersForMobile();
+  window.addEventListener('resize', adaptFiltersForMobile);
 }
 
-// antes el mapa con Stadia.AlidadeSmooth
+// Adapt mobile filters layout (keeps panel scrollable)
+function adaptFiltersForMobile(){
+  // (we already handle golden ratio with CSS)
+  // this function could be expanded for dynamic behaviors if needed
+}
 
+// init map (Carto light)
 function initMap(){
-  map = L.map('map', {preferCanvas: false}).setView([39.0,1.45], 10);
+  map = L.map('map', {preferCanvas:false}).setView([39.0,1.45], 10);
 
-	
-// Nuevo: Stamen Terrain
-//L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg', {
-  //maxZoom: 18,
-  //attribution: 'Map tiles by <a href="https://stamen.com/">Stamen Design</a>, <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-//}).addTo(map);
-	
-//cartolight
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19
-}).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+  }).addTo(map);
 
-
-
-  // marker cluster
   clusterGroup = L.markerClusterGroup();
   map.addLayer(clusterGroup);
-
-  markersGroup = L.layerGroup().addTo(map);
 }
 
-// Genera filtros de día automáticamente
-function buildDayFilters(){
-  const container = document.getElementById('day-filters');
+// Build day tabs under header
+function buildDayTabs(){
+  const container = document.getElementById('day-tabs');
   container.innerHTML = '';
   const days = [...new Set(activitiesData.map(a=>a.day))].sort((a,b)=>a-b);
-  days.forEach(day=>{
-    const wrapper = document.createElement('label');
-    wrapper.className = 'filter-option';
-    const input = document.createElement('input');
-    input.type = 'radio';
-    input.name = 'day';
-    input.id = `day-${day}`;
-    input.value = day;
-    input.addEventListener('change', ()=>selectDay(day));
-    const span = document.createElement('span');
-    span.textContent = `${currentLang === 'es' ? 'Día' : 'Day'} ${day}`;
-    wrapper.appendChild(input);
-    wrapper.appendChild(span);
-    container.appendChild(wrapper);
+  days.forEach(d=>{
+    const btn = document.createElement('button');
+    btn.className = 'day-tab';
+    btn.dataset.day = d;
+    const color = dayColors[d] || '#999';
+    btn.innerHTML = `<span class="dot" style="background:${color}"></span><span class="label">${currentLang==='es' ? 'Día' : 'Day'} ${d}</span>`;
+    btn.addEventListener('click', ()=>{
+      selectDay(d);
+      setActiveTab(d);
+    });
+    container.appendChild(btn);
   });
 }
 
-// Genera la leyenda
+// visually set active tab
+function setActiveTab(day){
+  const tabs = document.querySelectorAll('.day-tab');
+  tabs.forEach(t => {
+    const d = Number(t.dataset.day);
+    if (d === Number(day)) t.classList.add('active'); else t.classList.remove('active');
+  });
+}
+
+// build legend
 function buildLegend(){
   const legendItems = document.getElementById('legend-items');
   legendItems.innerHTML = '';
-
-  // Aeropuerto (código 0000) — si existe
-  const airportItem = document.createElement('div');
-  airportItem.className = 'legend-item';
-  airportItem.innerHTML = `<span class="legend-color" style="background:#e74c3c"></span><span>${currentLang==='es'?'Aeropuerto':'Airport'}</span>`;
-  legendItems.appendChild(airportItem);
-
-  // Días
+  const airportExists = activitiesData.some(a=>a.cod==='0000');
+  if (airportExists){
+    const airportItem = document.createElement('div');
+    airportItem.className = 'legend-item';
+    airportItem.innerHTML = `<span class="legend-color" style="background:#e74c3c"></span><span>${currentLang==='es'?'Aeropuerto':'Airport'}</span>`;
+    legendItems.appendChild(airportItem);
+  }
   const days = [...new Set(activitiesData.map(a=>a.day))].sort((a,b)=>a-b);
   days.forEach(d=>{
     const div = document.createElement('div');
@@ -370,34 +419,33 @@ function buildLegend(){
   });
 }
 
-// Selección de día
+// select day -> render activities + create markers
 function selectDay(day){
   currentDay = Number(day);
-  // traducir el label del input (en caso de haber cambiado idioma)
-  // render activities
-  renderActivityFilters(day);
-  // crear marcadores para ese día
-  createMarkersForDay(day);
+  renderActivityFilters(currentDay);
+  createMarkersForDay(currentDay);
 }
 
-// Renderiza las actividades del día en la columna
+// render activities list
 function renderActivityFilters(day){
   const container = document.getElementById('activity-filters');
   container.innerHTML = '';
   const acts = activitiesData.filter(a=>a.day === Number(day));
-  if (acts.length===0){ container.innerHTML = `<div>${I18N[currentLang].noMedia}</div>`; return; }
+  if (acts.length === 0){
+    container.innerHTML = `<div style="padding:12px;color:#666">${I18N[currentLang].noMedia}</div>`;
+    return;
+  }
   acts.forEach(act=>{
     const wrapper = document.createElement('div');
     wrapper.className = 'filter-option';
+
     const radio = document.createElement('input');
     radio.type = 'radio';
     radio.name = 'activity';
     radio.value = act.cod;
     radio.id = `activity-${act.cod}`;
     radio.addEventListener('change', ()=>{
-      // center map on activity and open popup + modal show
-      if (act.lat && act.lng) { map.setView([act.lat, act.lng], 15); }
-      // find marker for this activity and open popup
+      if (act.lat && act.lng) map.setView([act.lat, act.lng], 15);
       openPopupForActivity(act.cod);
     });
 
@@ -406,14 +454,12 @@ function renderActivityFilters(day){
     label.style.cursor = 'pointer';
     label.textContent = currentLang==='es' ? act.activity_es : act.activity_en;
 
-    // add a small "ver" link to open modal
     const viewLink = document.createElement('button');
     viewLink.className = 'popup-btn';
     viewLink.style.marginLeft = '8px';
     viewLink.textContent = I18N[currentLang].viewMedia;
     viewLink.addEventListener('click', (e)=>{
       e.stopPropagation();
-      // set filteredActivities / open modal for this activity
       openActivityByCod(act.cod);
     });
 
@@ -424,15 +470,15 @@ function renderActivityFilters(day){
   });
 }
 
-// Crear marcadores para el día: clusters + offsets para solapados
+// create markers for the selected day (clusters + offset for overlapping)
 function createMarkersForDay(day){
-  // limpiar clusters y markers
   clusterGroup.clearLayers();
   markerMap = {};
 
-  const acts = activitiesData.filter(a=>a.day === Number(day));
+  // include airport (0000) regardless of day, plus all activities for that day
+  const acts = activitiesData.filter(a=>a.day === Number(day) || a.cod === '0000');
 
-  // build grouping by rounded coords to detect overlaps
+  // group by rounded coords
   const groups = {};
   acts.forEach(act=>{
     if (typeof act.lat !== 'number' || typeof act.lng !== 'number') return;
@@ -441,20 +487,18 @@ function createMarkersForDay(day){
     groups[key].push(act);
   });
 
-  // for each group, create markers with slight offsets
+  const allMarkers = [];
+
   Object.keys(groups).forEach(key=>{
     const list = groups[key];
     list.forEach((act, idx)=>{
-      // offset pattern (small spiral)
       const offsetFactor = 0.00035;
       const angle = idx * 0.7;
       const lat = act.lat + Math.cos(angle) * offsetFactor * (Math.floor(idx/1) + 0.5);
       const lng = act.lng + Math.sin(angle) * offsetFactor * (Math.floor(idx/1) + 0.5);
 
-      // color by day (special airport color if code 0000)
       const color = (act.cod === '0000') ? '#e74c3c' : (dayColors[act.day] || '#3498db');
 
-      // custom icon as small colored circle
       const iconHtml = `<div style="
         background:${color};
         width:18px;height:18px;border-radius:50%;
@@ -463,58 +507,49 @@ function createMarkersForDay(day){
 
       const marker = L.marker([lat,lng], {icon});
 
-      // save mapping cod->marker (multiple markers per cod could exist, so push)
       if (!markerMap[act.cod]) markerMap[act.cod]=[];
       markerMap[act.cod].push(marker);
 
-      // popup with name, place and button
       const activityName = currentLang==='es' ? act.activity_es : act.activity_en;
       const placeName = currentLang==='es' ? act.place_es : act.place_en;
       const facilitator = currentLang==='es' ? act.facilitator_es : act.facilitator_en;
 
-      let popupHTML = `<strong>${activityName}</strong><br>${placeName}`;
-      if (act.hasFacilitator) popupHTML += `<br>${I18N[currentLang].facilitator} ${facilitator}`;
+      let popupHTML = `<strong>${escapeHtml(activityName)}</strong><br>${escapeHtml(placeName)}`;
+      if (act.hasFacilitator && facilitator) popupHTML += `<br><strong>${I18N[currentLang].facilitator}</strong> ${escapeHtml(facilitator)}`;
       popupHTML += `<br><button class="popup-btn" onclick="openActivityByCod('${act.cod}')">${I18N[currentLang].viewMedia}</button>`;
 
       marker.bindPopup(popupHTML);
-
       clusterGroup.addLayer(marker);
+      allMarkers.push(marker);
     });
   });
 
-  // fit bounds to current markers
-  const allMarkers = [];
-  clusterGroup.eachLayer(layer => allMarkers.push(layer));
   if (allMarkers.length>0){
-    const group = L.featureGroup(allMarkers);
-    try { map.fitBounds(group.getBounds().pad(0.4)); } catch(e){ /* ignore */ }
+    try {
+      const group = L.featureGroup(allMarkers);
+      map.fitBounds(group.getBounds().pad(0.35), { padding: [50,50], paddingTopLeft: [0, 80] });
+    } catch(e){}
   }
 }
 
-// Abrir popup asociado a un activity.cod (busca markerMap)
+// open popup for an activity code
 function openPopupForActivity(cod){
   const arr = markerMap[cod];
   if (!arr || arr.length===0) return;
-  // open first matching popup
   const m = arr[0];
-  if (m) {
-    m.openPopup();
-  }
+  if (m && m.openPopup) m.openPopup();
 }
 
-// Abre la galería/modal usando el código de actividad
+// open modal / gallery by activity code
 function openActivityByCod(cod){
-  // find activity object
   const act = activitiesData.find(a=>a.cod === cod);
   if (!act) return;
   currentActivity = act;
 
-  // build media list from photoManifest if exists
   const dayFolder = `dia${act.day}`;
   let mediaList = [];
   if (typeof photoManifest !== 'undefined' && photoManifest[dayFolder] && photoManifest[dayFolder][cod]) {
     mediaList = photoManifest[dayFolder][cod].map(item=>{
-      // media path: MEDIA_FOLDER/diaX/cod/original
       return {
         original: item.original,
         sequential: item.sequential,
@@ -524,24 +559,20 @@ function openActivityByCod(cod){
     });
   }
 
-  // if no media found, show message
-  if (mediaList.length === 0) {
-    // show modal with message
-    document.getElementById('modal-title').textContent = (currentLang==='es') ? act.activity_es : act.activity_en;
-    const grid = document.getElementById('photos-grid');
+  const grid = document.getElementById('photos-grid');
+  grid.innerHTML = '';
+
+  if (mediaList.length === 0){
     grid.innerHTML = `<div style="padding:18px;color:#555">${I18N[currentLang].noMedia}</div>`;
-    // clear main media and info
     clearMainMedia();
     document.getElementById('photo-counter').textContent = '';
     document.getElementById('photo-info').style.display = 'none';
+    document.getElementById('modal-title').textContent = currentLang==='es' ? act.activity_es : act.activity_en;
     document.getElementById('photo-modal').style.display = 'flex';
     document.getElementById('photo-modal').setAttribute('aria-hidden','false');
     return;
   }
 
-  // populate thumbnails
-  const grid = document.getElementById('photos-grid');
-  grid.innerHTML = '';
   mediaList.forEach((m,i)=>{
     const el = document.createElement('div');
     el.style.display='inline-block';
@@ -551,7 +582,7 @@ function openActivityByCod(cod){
     el.style.overflow='hidden';
     el.style.borderRadius='6px';
     el.style.flex='0 0 auto';
-    // create thumb element depending on type
+
     if (m.type === 'image') {
       const img = document.createElement('img');
       img.src = m.path; img.className='thumb';
@@ -580,20 +611,14 @@ function openActivityByCod(cod){
     grid.appendChild(el);
   });
 
-  // show first media
   showMediaAtIndex(0, mediaList);
-
-  // title
   document.getElementById('modal-title').textContent = currentLang==='es' ? act.activity_es : act.activity_en;
-
-  // show modal
   document.getElementById('photo-modal').style.display = 'flex';
   document.getElementById('photo-modal').setAttribute('aria-hidden','false');
 }
 
-// infer type from extension
 function inferTypeFromFilename(name){
-  const ext = name.split('.').pop().toLowerCase();
+  const ext = (name.split('.').pop() || '').toLowerCase();
   if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) return 'image';
   if (['mp4','mov','webm','ogg','m4v'].includes(ext)) return 'video';
   if (['mp3','wav','m4a','ogg'].includes(ext)) return 'audio';
@@ -602,10 +627,9 @@ function inferTypeFromFilename(name){
 
 function clearMainMedia(){
   const wrapper = document.getElementById('media-wrapper');
+  if (!wrapper) return;
   wrapper.innerHTML = '';
-  // keep an <img id="main-media"> in case of image later? We'll recreate as needed.
-  const img = document.createElement('img');
-  img.id = 'main-media'; img.style.display='none';
+  const img = document.createElement('img'); img.id='main-media'; img.style.display='none';
   wrapper.appendChild(img);
 }
 
@@ -618,10 +642,9 @@ function showMediaAtIndex(idx, mediaList){
   currentMediaIdxLocal = idx;
   const m = mediaList[idx];
   const wrapper = document.getElementById('media-wrapper');
-  wrapper.innerHTML = ''; // remove previous
+  wrapper.innerHTML = '';
   document.getElementById('photo-counter').textContent = `${idx+1} / ${mediaList.length}`;
 
-  // create appropriate element
   if (m.type === 'image') {
     const img = document.createElement('img');
     img.id = 'main-media';
@@ -638,7 +661,6 @@ function showMediaAtIndex(idx, mediaList){
     vid.style.maxHeight = '60vh';
     vid.style.width = '100%';
     wrapper.appendChild(vid);
-    // autoplay muted small preview? do not autoplay by default
   } else if (m.type === 'audio') {
     const audio = document.createElement('audio');
     audio.id = 'main-media';
@@ -652,11 +674,9 @@ function showMediaAtIndex(idx, mediaList){
     wrapper.appendChild(div);
   }
 
-  // update thumbnails active class
+  // update thumbnails active state
   const thumbs = document.querySelectorAll('.photos-grid .thumb, .photos-grid video');
-  thumbs.forEach((t,i)=> {
-    t.classList.toggle('active', i===idx);
-  });
+  thumbs.forEach((t,i)=> t.classList.toggle('active', i===idx) );
 
   // fill info
   const act = currentActivity;
@@ -664,20 +684,16 @@ function showMediaAtIndex(idx, mediaList){
   document.getElementById('info-place').textContent = currentLang==='es'? act.place_es : act.place_en;
   document.getElementById('info-activity').textContent = currentLang==='es'? act.activity_es : act.activity_en;
   document.getElementById('info-facilitator').textContent = currentLang==='es'? act.facilitator_es : act.facilitator_en;
-
-  // show photo-info collapsed by default? keep as toggle; do nothing
 }
 
-// Navegar media
 function navigateMedia(dir){
   if (!currentMediaList || currentMediaList.length===0) return;
   let next = currentMediaIdxLocal + dir;
-  if (next < 0) next = currentMediaList.length -1;
+  if (next < 0) next = currentMediaList.length - 1;
   if (next >= currentMediaList.length) next = 0;
   showMediaAtIndex(next, currentMediaList);
 }
 
-// toggle info panel
 function toggleInfo(){
   const info = document.getElementById('photo-info');
   const btn = document.getElementById('toggle-info');
@@ -687,26 +703,24 @@ function toggleInfo(){
   } else {
     info.style.display = 'block';
     btn.textContent = I18N[currentLang].hideInfo;
+    info.scrollTop = 0;
   }
 }
 
-// fullscreen: open current media in new tab
 function openFullscreen(){
   if (!currentMediaList || currentMediaList.length===0) return;
   const m = currentMediaList[currentMediaIdxLocal];
   if (m && m.path) window.open(m.path,'_blank');
 }
 
-// cerrar modal
 function closeModal(){
   document.getElementById('photo-modal').style.display = 'none';
   document.getElementById('photo-modal').setAttribute('aria-hidden','true');
-  // pause any playing media
   const main = document.getElementById('media-wrapper').querySelector('video, audio');
   if (main && typeof main.pause === 'function') main.pause();
 }
 
-// cambiar idioma (traduce TODO)
+// change language -> translate whole UI + update tabs, legend, activities, popups
 function setLanguage(lang){
   currentLang = lang;
   document.getElementById('btn-es').classList.toggle('active', lang==='es');
@@ -714,32 +728,42 @@ function setLanguage(lang){
   document.getElementById('btn-es').setAttribute('aria-pressed', String(lang==='es'));
   document.getElementById('btn-en').setAttribute('aria-pressed', String(lang==='en'));
 
-  // Traduce textos fijos
+  document.title = I18N[lang].title;
   document.getElementById('subtitle').textContent = I18N[lang].subtitle;
   document.getElementById('days-title').textContent = I18N[lang].daysTitle;
   document.getElementById('activities-title').textContent = I18N[lang].activitiesTitle;
   document.getElementById('legend-title').textContent = I18N[lang].legendTitle;
 
-  // Reconfigurar filtros y legend y marcadores para actualizar textos/popup
-  buildDayFilters();
+  document.getElementById('toggle-info').textContent = I18N[lang].showInfo;
+  document.getElementById('fullscreen').textContent = I18N[lang].fullscreen;
+  document.getElementById('prev-photo').textContent = I18N[lang].previous;
+  document.getElementById('next-photo').textContent = I18N[lang].next;
+
+  document.getElementById('lbl-date').textContent = I18N[lang].date;
+  document.getElementById('lbl-place').textContent = I18N[lang].place;
+  document.getElementById('lbl-activity').textContent = I18N[lang].activity;
+  document.getElementById('lbl-facilitator').textContent = I18N[lang].facilitator;
+
+  // rebuild tabs with translated labels
+  buildDayTabs();
   buildLegend();
   if (currentDay !== null) {
-    // restore radio selection
-    const r = document.getElementById(`day-${currentDay}`);
-    if (r) r.checked = true;
+    setActiveTab(currentDay);
     renderActivityFilters(currentDay);
     createMarkersForDay(currentDay);
   }
 }
 
-// Wait until DOM and external scripts loaded
+// simple escape for popup content
+function escapeHtml(unsafe) {
+  if (!unsafe) return '';
+  return unsafe.replace(/[&<"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','"':'&quot;',"'":'&#039;'}[m]); });
+}
+
+// start
 document.addEventListener('DOMContentLoaded', ()=>{
-  // small delay to ensure data scripts loaded (activities.js + photo-manifest.js)
-  // if they are loaded after this file, they will already be executed; otherwise user should include them before this script tag
   initApp();
 });
 </script>
 </body>
 </html>
-
-
