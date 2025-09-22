@@ -34,19 +34,19 @@ header{
   justify-content:space-between;
   align-items:center;
   position:relative;
-  z-index:1600;
+  z-index:1600; /* keep above map controls */
 }
 .logo{font-weight:700;font-size:1.45rem;line-height:1}
 .logo span{color:var(--color-accent)}
 .subtitle{font-weight:300;font-size:0.9rem;margin-top:4px;color:rgba(255,255,255,0.95)}
 .header-left{display:flex;flex-direction:column}
 
-/* Language buttons */
+/* smaller language buttons to avoid fighting with title */
 .language-selector{display:flex;gap:6px}
 .lang-btn{background:transparent;border:1px solid rgba(255,255,255,0.85);color:white;padding:4px 7px;border-radius:4px;cursor:pointer;font-size:0.85rem}
 .lang-btn.active{background:white;color:var(--color-primary);font-weight:600}
 
-/* Day tabs */
+/* Day tabs under header */
 .day-tabs{
   display:flex;
   gap:8px;
@@ -85,7 +85,7 @@ header{
 .filter-option:hover{background:#fafafa}
 .filter-option input{cursor:pointer}
 
-/* hide legacy day-radios */
+/* hide legacy day-radios area (we're using tabs) but keep element present for accessibility if needed */
 #day-filters{display:none}
 
 .map-container{flex:1;position:relative}
@@ -117,19 +117,23 @@ header{
 #main-media{width:100%;max-height:60vh;object-fit:contain;border-radius:6px;background:#000}
 .viewer-nav{position:absolute;top:50%;width:100%;display:flex;justify-content:space-between;transform:translateY(-50%);pointer-events:none}
 .viewer-nav button{pointer-events:all;background:rgba(0,0,0,.55);color:#fff;border:none;width:42px;height:42px;border-radius:50%;font-size:20px;cursor:pointer}
-.photo-info{display:none !important;} /* OCULTA SIEMPRE */
+.photo-info{background:#f8f9fa;padding:12px;border-radius:8px;margin-top:8px;max-height:200px;overflow:auto;display:none}
 
-/* mobile */
+/* mobile: golden ratio proportion (segment short for map) */
 @media (max-width:900px){
   .main-content{flex-direction:column}
   .filters-panel{width:100%;max-height:62vh;display:block;z-index:1300}
+  /* golden ratio: map short segment ~38% of viewport */
   #map{height:38vh}
+  /* day tabs become horizontally scrollable and slightly larger */
   .day-tabs{padding:8px 12px}
   .day-tab{padding:8px 10px;font-size:0.95rem}
 }
 
+/* ensure leaflet controls do not overlay header */
 .leaflet-top, .leaflet-bottom { z-index:1000 !important; }
 
+/* small improvements */
 .popup-btn{background-color:var(--color-primary); color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-family:'Montserrat',sans-serif; font-weight:600}
 .filter-option label {flex:1}
 </style>
@@ -147,19 +151,25 @@ header{
     </div>
   </header>
 
-  <div class="day-tabs" id="day-tabs" aria-label="Seleccionar día"></div>
+  <!-- Day tabs (just under header) -->
+  <div class="day-tabs" id="day-tabs" aria-label="Seleccionar día">
+    <!-- populated by JS -->
+  </div>
 
   <div class="main-content">
     <aside class="filters-panel" aria-label="Filtros">
+      <!-- legacy day filters (hidden) kept for accessibility -->
       <div class="filter-section" id="legacy-days" style="display:none;">
         <h3 id="days-title">Días del Festival</h3>
         <div class="filter-options" id="day-filters"></div>
       </div>
+
       <div class="filter-section">
         <h3 id="activities-title">Actividades</h3>
         <div class="filter-options" id="activity-filters"></div>
       </div>
     </aside>
+
     <main class="map-container">
       <div id="map" role="application" aria-label="Mapa del festival"></div>
       <div class="legend" id="legend">
@@ -175,17 +185,21 @@ header{
   <div class="modal-content" role="dialog" aria-modal="true">
     <div class="close-modal" id="close-modal" title="Cerrar">&times;</div>
     <h2 class="location-title" id="modal-title"></h2>
+
     <div class="photos-container">
       <div class="thumbnails-container">
         <div class="photos-grid" id="photos-grid"></div>
       </div>
+
       <div class="photo-viewer">
         <div class="viewer-header">
           <span id="photo-counter"></span>
           <div>
+            <button id="toggle-info">Mostrar información</button>
             <button id="fullscreen">Ver pantalla completa</button>
           </div>
         </div>
+
         <div style="position:relative;">
           <div class="viewer-nav">
             <button id="prev-btn">❮</button>
@@ -195,7 +209,14 @@ header{
             <img id="main-media" src="" alt="Media" style="display:none" />
           </div>
         </div>
-        <!-- sección de info eliminada visualmente -->
+
+        <div class="photo-info" id="photo-info">
+          <div class="info-row"><strong id="lbl-date">Fecha:</strong> <span id="info-date"></span></div>
+          <div class="info-row"><strong id="lbl-place">Lugar:</strong> <span id="info-place"></span></div>
+          <div class="info-row"><strong id="lbl-activity">Actividad:</strong> <span id="info-activity"></span></div>
+          <div class="info-row"><strong id="lbl-facilitator">Facilitador:</strong> <span id="info-facilitator"></span></div>
+        </div>
+
         <div style="display:flex;justify-content:center;gap:12px;margin-top:12px;">
           <button class="nav-btn" id="prev-photo">← Anterior</button>
           <button class="nav-btn" id="next-photo">Siguiente →</button>
@@ -208,11 +229,541 @@ header{
 <!-- Dependencias -->
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+<!-- Tus datos externos (deben existir en /data/) -->
 <script src="data/activities.js"></script>
 <script src="data/photo-manifest.js"></script>
 
 <script>
-// ... tu JS tal cual estaba en funcional3, solo sin la referencia a toggle-info
+/*
+  Versión FUNCIONAL2 -> ajuste: pestañas de días justo bajo título + proporción áurea (segmento corto para el mapa en móvil)
+  Mantengo la estructura funcional anterior: activitiesData y photoManifest deben estar presentes.
+*/
+
+const MEDIA_FOLDER = "media"; // carpeta con media/diaX/cod/original
+
+// Traducciones
+const I18N = {
+  es: {
+    title: "Liquid Dance Revival - Festival de Danza en el Agua",
+    subtitle: "Festival de Danza en el Agua - Ibiza 2025",
+    daysTitle: "Días del Festival",
+    activitiesTitle: "Actividades",
+    legendTitle: "Leyenda",
+    showInfo: "Mostrar información",
+    hideInfo: "Ocultar información",
+    fullscreen: "Ver pantalla completa",
+    previous: "← Anterior",
+    next: "Siguiente →",
+    date: "Fecha:",
+    place: "Lugar:",
+    activity: "Actividad:",
+    facilitator: "Facilitador:",
+    viewMedia: "Ver material",
+    noMedia: "No hay material para esta actividad"
+  },
+  en: {
+    title: "Liquid Dance Revival - Water Dance Festival",
+    subtitle: "Water Dance Festival - Ibiza 2025",
+    daysTitle: "Festival Days",
+    activitiesTitle: "Activities",
+    legendTitle: "Legend",
+    showInfo: "Show information",
+    hideInfo: "Hide information",
+    fullscreen: "View fullscreen",
+    previous: "← Previous",
+    next: "Next →",
+    date: "Date:",
+    place: "Place:",
+    activity: "Activity:",
+    facilitator: "Facilitator:",
+    viewMedia: "View media",
+    noMedia: "No media for this activity"
+  }
+};
+
+// colores por día
+const dayColors = {
+  1: '#ffa0da',
+  2: '#e7b0e9',
+  3: '#cbbcf3',
+  4: '#bcd7f4',
+  5: '#cae8e8'
+};
+
+let currentLang = 'es';
+let currentDay = null;
+let currentActivity = null;
+let currentMediaIndex = 0;
+let map, clusterGroup;
+let markerMap = {}; // cod -> [marker...]
+
+function initApp(){
+  if (typeof activitiesData === 'undefined') {
+    console.error('No se ha cargado activitiesData (data/activities.js).');
+    alert('Falta data/activities.js — revisa que el archivo exista en /data/');
+    return;
+  }
+
+  // set language buttons
+  document.getElementById('btn-es').addEventListener('click', ()=>setLanguage('es'));
+  document.getElementById('btn-en').addEventListener('click', ()=>setLanguage('en'));
+
+  // init map
+  initMap();
+
+  // build UI
+  buildDayTabs();
+  buildLegend();
+
+  // default: first available day
+  const availableDays = [...new Set(activitiesData.map(a=>a.day))].sort((a,b)=>a-b);
+  if (availableDays.length>0) {
+    selectDay(availableDays[0]);
+    setActiveTab(availableDays[0]);
+  }
+
+  // modal controls
+  document.getElementById('close-modal').addEventListener('click', closeModal);
+  document.getElementById('prev-photo').addEventListener('click', ()=>navigateMedia(-1));
+  document.getElementById('next-photo').addEventListener('click', ()=>navigateMedia(1));
+  document.getElementById('prev-btn').addEventListener('click', ()=>navigateMedia(-1));
+  document.getElementById('next-btn').addEventListener('click', ()=>navigateMedia(1));
+  document.getElementById('toggle-info').addEventListener('click', toggleInfo);
+  document.getElementById('fullscreen').addEventListener('click', openFullscreen);
+
+  // close modal clicking outside
+  const modal = document.getElementById('photo-modal');
+  modal.addEventListener('click', (e)=>{ if (e.target===modal) closeModal(); });
+
+  // keyboard in modal
+  document.addEventListener('keydown', (e)=>{
+    const modalVisible = document.getElementById('photo-modal').style.display === 'flex';
+    if (!modalVisible) return;
+    if (e.key === 'ArrowLeft') navigateMedia(-1);
+    if (e.key === 'ArrowRight') navigateMedia(1);
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // responsive helper
+  adaptFiltersForMobile();
+  window.addEventListener('resize', adaptFiltersForMobile);
+}
+
+// Adapt mobile filters layout (keeps panel scrollable)
+function adaptFiltersForMobile(){
+  // (we already handle golden ratio with CSS)
+  // this function could be expanded for dynamic behaviors if needed
+}
+
+// init map (Carto light)
+function initMap(){
+  map = L.map('map', {preferCanvas:false}).setView([39.0,1.45], 10);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+  }).addTo(map);
+
+  clusterGroup = L.markerClusterGroup();
+  map.addLayer(clusterGroup);
+}
+
+// Build day tabs under header
+function buildDayTabs(){
+  const container = document.getElementById('day-tabs');
+  container.innerHTML = '';
+  const days = [...new Set(activitiesData.map(a=>a.day))].sort((a,b)=>a-b);
+  days.forEach(d=>{
+    const btn = document.createElement('button');
+    btn.className = 'day-tab';
+    btn.dataset.day = d;
+    const color = dayColors[d] || '#999';
+    btn.innerHTML = `<span class="dot" style="background:${color}"></span><span class="label">${currentLang==='es' ? 'Día' : 'Day'} ${d}</span>`;
+    btn.addEventListener('click', ()=>{
+      selectDay(d);
+      setActiveTab(d);
+    });
+    container.appendChild(btn);
+  });
+}
+
+// visually set active tab
+function setActiveTab(day){
+  const tabs = document.querySelectorAll('.day-tab');
+  tabs.forEach(t => {
+    const d = Number(t.dataset.day);
+    if (d === Number(day)) t.classList.add('active'); else t.classList.remove('active');
+  });
+}
+
+// build legend
+function buildLegend(){
+  const legendItems = document.getElementById('legend-items');
+  legendItems.innerHTML = '';
+  const airportExists = activitiesData.some(a=>a.cod==='0000');
+  if (airportExists){
+    const airportItem = document.createElement('div');
+    airportItem.className = 'legend-item';
+    airportItem.innerHTML = `<span class="legend-color" style="background:#e74c3c"></span><span>${currentLang==='es'?'Aeropuerto':'Airport'}</span>`;
+    legendItems.appendChild(airportItem);
+  }
+  const days = [...new Set(activitiesData.map(a=>a.day))].sort((a,b)=>a-b);
+  days.forEach(d=>{
+    const div = document.createElement('div');
+    div.className = 'legend-item';
+    const color = dayColors[d] || '#999';
+    div.innerHTML = `<span class="legend-color" style="background:${color}"></span><span>${currentLang==='es'?'Día':'Day'} ${d}</span>`;
+    legendItems.appendChild(div);
+  });
+}
+
+// select day -> render activities + create markers
+function selectDay(day){
+  currentDay = Number(day);
+  renderActivityFilters(currentDay);
+  createMarkersForDay(currentDay);
+}
+
+// render activities list
+function renderActivityFilters(day){
+  const container = document.getElementById('activity-filters');
+  container.innerHTML = '';
+  const acts = activitiesData.filter(a=>a.day === Number(day));
+  if (acts.length === 0){
+    container.innerHTML = `<div style="padding:12px;color:#666">${I18N[currentLang].noMedia}</div>`;
+    return;
+  }
+  acts.forEach(act=>{
+    const wrapper = document.createElement('div');
+    wrapper.className = 'filter-option';
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'activity';
+    radio.value = act.cod;
+    radio.id = `activity-${act.cod}`;
+    radio.addEventListener('change', ()=>{
+      if (act.lat && act.lng) map.setView([act.lat, act.lng], 15);
+      openPopupForActivity(act.cod);
+    });
+
+    const label = document.createElement('label');
+    label.htmlFor = radio.id;
+    label.style.cursor = 'pointer';
+    label.textContent = currentLang==='es' ? act.activity_es : act.activity_en;
+
+    const viewLink = document.createElement('button');
+    viewLink.className = 'popup-btn';
+    viewLink.style.marginLeft = '8px';
+    viewLink.textContent = I18N[currentLang].viewMedia;
+    viewLink.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      openActivityByCod(act.cod);
+    });
+
+    wrapper.appendChild(radio);
+    wrapper.appendChild(label);
+    wrapper.appendChild(viewLink);
+    container.appendChild(wrapper);
+  });
+}
+
+// create markers for the selected day (clusters + offset for overlapping)
+function createMarkersForDay(day){
+  clusterGroup.clearLayers();
+  markerMap = {};
+
+  // include airport (0000) regardless of day, plus all activities for that day
+  const acts = activitiesData.filter(a=>a.day === Number(day) || a.cod === '0000');
+
+  // group by rounded coords
+  const groups = {};
+  acts.forEach(act=>{
+    if (typeof act.lat !== 'number' || typeof act.lng !== 'number') return;
+    const key = `${act.lat.toFixed(5)}_${act.lng.toFixed(5)}`;
+    if (!groups[key]) groups[key]=[];
+    groups[key].push(act);
+  });
+
+  const allMarkers = [];
+
+  Object.keys(groups).forEach(key=>{
+    const list = groups[key];
+    list.forEach((act, idx)=>{
+      const offsetFactor = 0.00035;
+      const angle = idx * 0.7;
+      const lat = act.lat + Math.cos(angle) * offsetFactor * (Math.floor(idx/1) + 0.5);
+      const lng = act.lng + Math.sin(angle) * offsetFactor * (Math.floor(idx/1) + 0.5);
+
+      const color = (act.cod === '0000') ? '#e74c3c' : (dayColors[act.day] || '#3498db');
+
+      const iconHtml = `<div style="
+        background:${color};
+        width:18px;height:18px;border-radius:50%;
+        border:2px solid white;box-shadow:0 0 8px rgba(0,0,0,0.25)"></div>`;
+      const icon = L.divIcon({html:iconHtml, className:'custom-div-icon', iconSize:[18,18], iconAnchor:[9,9]});
+
+      const marker = L.marker([lat,lng], {icon});
+
+      if (!markerMap[act.cod]) markerMap[act.cod]=[];
+      markerMap[act.cod].push(marker);
+
+      const activityName = currentLang==='es' ? act.activity_es : act.activity_en;
+      const placeName = currentLang==='es' ? act.place_es : act.place_en;
+      const facilitator = currentLang==='es' ? act.facilitator_es : act.facilitator_en;
+
+      let popupHTML = `<strong>${escapeHtml(activityName)}</strong><br>${escapeHtml(placeName)}`;
+      if (act.hasFacilitator && facilitator) popupHTML += `<br><strong>${I18N[currentLang].facilitator}</strong> ${escapeHtml(facilitator)}`;
+      popupHTML += `<br><button class="popup-btn" onclick="openActivityByCod('${act.cod}')">${I18N[currentLang].viewMedia}</button>`;
+
+      marker.bindPopup(popupHTML);
+      clusterGroup.addLayer(marker);
+      allMarkers.push(marker);
+    });
+  });
+
+  if (allMarkers.length>0){
+    try {
+      const group = L.featureGroup(allMarkers);
+      map.fitBounds(group.getBounds().pad(0.35), { padding: [50,50], paddingTopLeft: [0, 80] });
+    } catch(e){}
+  }
+}
+
+// open popup for an activity code
+function openPopupForActivity(cod){
+  const arr = markerMap[cod];
+  if (!arr || arr.length===0) return;
+  const m = arr[0];
+  if (m && m.openPopup) m.openPopup();
+}
+
+// open modal / gallery by activity code
+function openActivityByCod(cod){
+  const act = activitiesData.find(a=>a.cod === cod);
+  if (!act) return;
+  currentActivity = act;
+
+  const dayFolder = `dia${act.day}`;
+  let mediaList = [];
+  if (typeof photoManifest !== 'undefined' && photoManifest[dayFolder] && photoManifest[dayFolder][cod]) {
+    mediaList = photoManifest[dayFolder][cod].map(item=>{
+      return {
+        original: item.original,
+        sequential: item.sequential,
+        type: item.type || inferTypeFromFilename(item.original),
+        path: `${MEDIA_FOLDER}/${dayFolder}/${cod}/${item.original}`
+      };
+    });
+  }
+
+  const grid = document.getElementById('photos-grid');
+  grid.innerHTML = '';
+
+  if (mediaList.length === 0){
+    grid.innerHTML = `<div style="padding:18px;color:#555">${I18N[currentLang].noMedia}</div>`;
+    clearMainMedia();
+    document.getElementById('photo-counter').textContent = '';
+    document.getElementById('photo-info').style.display = 'none';
+    document.getElementById('modal-title').textContent = currentLang==='es' ? act.activity_es : act.activity_en;
+    document.getElementById('photo-modal').style.display = 'flex';
+    document.getElementById('photo-modal').setAttribute('aria-hidden','false');
+    return;
+  }
+
+  mediaList.forEach((m,i)=>{
+    const el = document.createElement('div');
+    el.style.display='inline-block';
+    el.style.height='100%';
+    el.style.minWidth = '120px';
+    el.style.maxWidth = '220px';
+    el.style.overflow='hidden';
+    el.style.borderRadius='6px';
+    el.style.flex='0 0 auto';
+
+    if (m.type === 'image') {
+      const img = document.createElement('img');
+      img.src = m.path; img.className='thumb';
+      img.style.height='100%'; img.style.display='block';
+      if (i===0) img.classList.add('active');
+      img.addEventListener('click', ()=>showMediaAtIndex(i, mediaList));
+      el.appendChild(img);
+    } else if (m.type === 'video') {
+      const vid = document.createElement('video');
+      vid.src = m.path; vid.className='thumb'; vid.controls=false; vid.muted=true;
+      vid.style.height='100%';
+      vid.addEventListener('click', ()=>showMediaAtIndex(i, mediaList));
+      el.appendChild(vid);
+    } else if (m.type === 'audio') {
+      const box = document.createElement('div');
+      box.style.height='100%'; box.style.display='flex'; box.style.alignItems='center'; box.style.justifyContent='center';
+      box.style.background='#111'; box.style.color='#fff'; box.style.padding='8px';
+      box.textContent = m.original;
+      box.addEventListener('click', ()=>showMediaAtIndex(i, mediaList));
+      el.appendChild(box);
+    } else {
+      const unknown = document.createElement('div');
+      unknown.textContent = m.original;
+      el.appendChild(unknown);
+    }
+    grid.appendChild(el);
+  });
+
+  showMediaAtIndex(0, mediaList);
+  document.getElementById('modal-title').textContent = currentLang==='es' ? act.activity_es : act.activity_en;
+  document.getElementById('photo-modal').style.display = 'flex';
+  document.getElementById('photo-modal').setAttribute('aria-hidden','false');
+}
+
+function inferTypeFromFilename(name){
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) return 'image';
+  if (['mp4','mov','webm','ogg','m4v'].includes(ext)) return 'video';
+  if (['mp3','wav','m4a','ogg'].includes(ext)) return 'audio';
+  return 'file';
+}
+
+function clearMainMedia(){
+  const wrapper = document.getElementById('media-wrapper');
+  if (!wrapper) return;
+  wrapper.innerHTML = '';
+  const img = document.createElement('img'); img.id='main-media'; img.style.display='none';
+  wrapper.appendChild(img);
+}
+
+let currentMediaList = [];
+let currentMediaIdxLocal = 0;
+
+function showMediaAtIndex(idx, mediaList){
+  if (!Array.isArray(mediaList) || mediaList.length===0) return;
+  currentMediaList = mediaList;
+  currentMediaIdxLocal = idx;
+  const m = mediaList[idx];
+  const wrapper = document.getElementById('media-wrapper');
+  wrapper.innerHTML = '';
+  document.getElementById('photo-counter').textContent = `${idx+1} / ${mediaList.length}`;
+
+  if (m.type === 'image') {
+    const img = document.createElement('img');
+    img.id = 'main-media';
+    img.src = m.path;
+    img.alt = m.original || '';
+    img.style.maxHeight = '60vh';
+    img.style.width = '100%';
+    wrapper.appendChild(img);
+  } else if (m.type === 'video') {
+    const vid = document.createElement('video');
+    vid.id = 'main-media';
+    vid.src = m.path;
+    vid.controls = true;
+    vid.style.maxHeight = '60vh';
+    vid.style.width = '100%';
+    wrapper.appendChild(vid);
+  } else if (m.type === 'audio') {
+    const audio = document.createElement('audio');
+    audio.id = 'main-media';
+    audio.src = m.path;
+    audio.controls = true;
+    audio.style.width = '100%';
+    wrapper.appendChild(audio);
+  } else {
+    const div = document.createElement('div');
+    div.textContent = m.original;
+    wrapper.appendChild(div);
+  }
+
+  // update thumbnails active state
+  const thumbs = document.querySelectorAll('.photos-grid .thumb, .photos-grid video');
+  thumbs.forEach((t,i)=> t.classList.toggle('active', i===idx) );
+
+  // fill info
+  const act = currentActivity;
+  document.getElementById('info-date').textContent = act.date || '';
+  document.getElementById('info-place').textContent = currentLang==='es'? act.place_es : act.place_en;
+  document.getElementById('info-activity').textContent = currentLang==='es'? act.activity_es : act.activity_en;
+  document.getElementById('info-facilitator').textContent = currentLang==='es'? act.facilitator_es : act.facilitator_en;
+}
+
+function navigateMedia(dir){
+  if (!currentMediaList || currentMediaList.length===0) return;
+  let next = currentMediaIdxLocal + dir;
+  if (next < 0) next = currentMediaList.length - 1;
+  if (next >= currentMediaList.length) next = 0;
+  showMediaAtIndex(next, currentMediaList);
+}
+
+function toggleInfo(){
+  const info = document.getElementById('photo-info');
+  const btn = document.getElementById('toggle-info');
+  if (info.style.display === 'block') {
+    info.style.display = 'none';
+    btn.textContent = I18N[currentLang].showInfo;
+  } else {
+    info.style.display = 'block';
+    btn.textContent = I18N[currentLang].hideInfo;
+    info.scrollTop = 0;
+  }
+}
+
+function openFullscreen(){
+  if (!currentMediaList || currentMediaList.length===0) return;
+  const m = currentMediaList[currentMediaIdxLocal];
+  if (m && m.path) window.open(m.path,'_blank');
+}
+
+function closeModal(){
+  document.getElementById('photo-modal').style.display = 'none';
+  document.getElementById('photo-modal').setAttribute('aria-hidden','true');
+  const main = document.getElementById('media-wrapper').querySelector('video, audio');
+  if (main && typeof main.pause === 'function') main.pause();
+}
+
+// change language -> translate whole UI + update tabs, legend, activities, popups
+function setLanguage(lang){
+  currentLang = lang;
+  document.getElementById('btn-es').classList.toggle('active', lang==='es');
+  document.getElementById('btn-en').classList.toggle('active', lang==='en');
+  document.getElementById('btn-es').setAttribute('aria-pressed', String(lang==='es'));
+  document.getElementById('btn-en').setAttribute('aria-pressed', String(lang==='en'));
+
+  document.title = I18N[lang].title;
+  document.getElementById('subtitle').textContent = I18N[lang].subtitle;
+  document.getElementById('days-title').textContent = I18N[lang].daysTitle;
+  document.getElementById('activities-title').textContent = I18N[lang].activitiesTitle;
+  document.getElementById('legend-title').textContent = I18N[lang].legendTitle;
+
+  document.getElementById('toggle-info').textContent = I18N[lang].showInfo;
+  document.getElementById('fullscreen').textContent = I18N[lang].fullscreen;
+  document.getElementById('prev-photo').textContent = I18N[lang].previous;
+  document.getElementById('next-photo').textContent = I18N[lang].next;
+
+  document.getElementById('lbl-date').textContent = I18N[lang].date;
+  document.getElementById('lbl-place').textContent = I18N[lang].place;
+  document.getElementById('lbl-activity').textContent = I18N[lang].activity;
+  document.getElementById('lbl-facilitator').textContent = I18N[lang].facilitator;
+
+  // rebuild tabs with translated labels
+  buildDayTabs();
+  buildLegend();
+  if (currentDay !== null) {
+    setActiveTab(currentDay);
+    renderActivityFilters(currentDay);
+    createMarkersForDay(currentDay);
+  }
+}
+
+// simple escape for popup content
+function escapeHtml(unsafe) {
+  if (!unsafe) return '';
+  return unsafe.replace(/[&<"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','"':'&quot;',"'":'&#039;'}[m]); });
+}
+
+// start
+document.addEventListener('DOMContentLoaded', ()=>{
+  initApp();
+});
 </script>
 </body>
 </html>
